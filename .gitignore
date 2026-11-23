@@ -1,0 +1,22 @@
+# Yerel veritabani ve gecici dosyalar
+storage/*.sqlite
+storage/*.sqlite-journal
+storage/*.db
+
+# Kullanici yuklemeleri (.htaccess korunur)
+uploads/*
+!uploads/.htaccess
+
+# Dokumanlar
+*.pdf
+
+# Ortam degiskenleri
+.env
+.env.local
+
+# IDE ve sistem dosyalari
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
