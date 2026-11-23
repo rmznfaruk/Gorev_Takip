@@ -232,7 +232,23 @@ function bildirim_ekle(PDO $pdo, $hedef_kullanici_id, $tur, $mesaj, $link = null
             INSERT INTO bildirimler (kullanici_id, tur, mesaj, link, okundu)
             VALUES (?, ?, ?, ?, 0)
         ');
-        return $stmt->execute(array($hedef_id, $tur_temiz, $mesaj_temiz, $link_temiz));
+        $ok = $stmt->execute(array($hedef_id, $tur_temiz, $mesaj_temiz, $link_temiz));
+        if ($ok) {
+            // Kullanici basina en guncel 100 bildirimi tut, eskilerini temizle
+            $esik_stmt = $pdo->prepare('
+                SELECT id FROM bildirimler
+                WHERE kullanici_id = ?
+                ORDER BY id DESC
+                LIMIT 1 OFFSET 100
+            ');
+            $esik_stmt->execute(array($hedef_id));
+            $esik_id = $esik_stmt->fetchColumn();
+            if ($esik_id !== false) {
+                $sil_stmt = $pdo->prepare('DELETE FROM bildirimler WHERE kullanici_id = ? AND id <= ?');
+                $sil_stmt->execute(array($hedef_id, (int) $esik_id));
+            }
+        }
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }
@@ -255,7 +271,23 @@ function aktivite_kaydet(PDO $pdo, $proje_id, $kullanici_id, $mesaj)
             INSERT INTO aktiviteler (proje_id, kullanici_id, mesaj)
             VALUES (?, ?, ?)
         ');
-        return $stmt->execute(array($pid, $kid, $mesaj_temiz));
+        $ok = $stmt->execute(array($pid, $kid, $mesaj_temiz));
+        if ($ok) {
+            // Oda basina en guncel 200 aktiviteyi tut, eskilerini otomatik temizle
+            $esik_stmt = $pdo->prepare('
+                SELECT id FROM aktiviteler
+                WHERE proje_id = ?
+                ORDER BY id DESC
+                LIMIT 1 OFFSET 200
+            ');
+            $esik_stmt->execute(array($pid));
+            $esik_id = $esik_stmt->fetchColumn();
+            if ($esik_id !== false) {
+                $sil_stmt = $pdo->prepare('DELETE FROM aktiviteler WHERE proje_id = ? AND id <= ?');
+                $sil_stmt->execute(array($pid, (int) $esik_id));
+            }
+        }
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }

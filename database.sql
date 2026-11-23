@@ -1,11 +1,10 @@
 -- GorevTakip - Proje ve Gorev Dagilim Sistemi (v3 Canli Kurulum)
 -- MySQL 8 / MariaDB Veritabani Semasi (9 Iliskili Tablo)
 
-CREATE DATABASE IF NOT EXISTS gorev_takip
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE gorev_takip;
+-- Yerel MySQL'de yeni veritabani olusturmak isterseniz once olusturup secin:
+-- CREATE DATABASE IF NOT EXISTS gorev_takip CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE gorev_takip;
+-- (InfinityFree / paylasimli hosting phpMyAdmin icinde once veritabanini secip dogrudan bu dosyayi ice aktarin.)
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS aktiviteler;
