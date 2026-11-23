@@ -8,6 +8,7 @@ if (giris_yapili_mi()) {
 
 $hata = '';
 $eposta = '';
+$oturumu_acik_tut = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '';
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eposta = trim((string) $_POST['giris_bilgisi']);
     }
     $sifre = isset($_POST['sifre']) ? (string) $_POST['sifre'] : '';
+    $oturumu_acik_tut = !empty($_POST['oturumu_acik_tut']);
 
     if (!csrf_dogrula($token)) {
         $hata = 'Güvenlik doğrulaması başarısız oldu. Lütfen sayfayı yenileyip tekrar deneyin.';
@@ -44,6 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['kullanici_rol'] = $kayit['rol'];
             $_SESSION['kullanici_ad'] = $kayit['ad_soyad'];
             unset($_SESSION['csrf_token']);
+
+            if ($oturumu_acik_tut) {
+                hatirla_token_olustur($pdo, (int) $kayit['id']);
+            } else {
+                hatirla_token_sil($pdo);
+            }
 
             flash_ekle('success', 'Hoş geldiniz, ' . $kayit['ad_soyad'] . '.');
             yonlendir('panel.php');
@@ -115,6 +123,19 @@ require __DIR__ . '/includes/header.php';
                     autocomplete="current-password"
                     required
                 >
+            </div>
+
+            <div class="form-group">
+                <label class="remember-row" for="oturumu_acik_tut">
+                    <input
+                        type="checkbox"
+                        id="oturumu_acik_tut"
+                        name="oturumu_acik_tut"
+                        value="1"
+                        <?php echo $oturumu_acik_tut ? 'checked' : ''; ?>
+                    >
+                    <span>Oturumu açık tut <span class="text-muted">(30 gün)</span></span>
+                </label>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>

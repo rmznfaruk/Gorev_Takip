@@ -63,6 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $yeni_hash = password_hash($yeni, PASSWORD_DEFAULT);
         $guncelle = $pdo->prepare('UPDATE kullanicilar SET sifre_hash = ? WHERE id = ?');
         $guncelle->execute(array($yeni_hash, $kullanici_id));
+        hatirla_tum_tokenlari_sil($pdo, $kullanici_id);
+        hatirla_cerez_ayarla('', time() - 42000);
 
         flash_ekle('success', 'Şifreniz güncellendi.');
         yonlendir('profil.php');

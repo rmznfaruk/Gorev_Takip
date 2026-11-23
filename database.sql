@@ -7,6 +7,7 @@
 -- (InfinityFree / paylasimli hosting phpMyAdmin icinde once veritabanini secip dogrudan bu dosyayi ice aktarin.)
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS hatirla_tokenlari;
 DROP TABLE IF EXISTS aktiviteler;
 DROP TABLE IF EXISTS bildirimler;
 DROP TABLE IF EXISTS gorev_dosyalari;
@@ -173,4 +174,18 @@ CREATE TABLE aktiviteler (
   CONSTRAINT fk_aktiviteler_kullanici
     FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id)
     ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE hatirla_tokenlari (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  kullanici_id INT UNSIGNED NOT NULL,
+  secici VARCHAR(32) NOT NULL UNIQUE,
+  dogrulayici_hash CHAR(64) NOT NULL,
+  son_gecerlilik DATETIME NOT NULL,
+  olusturma_tarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_hatirla_kullanici (kullanici_id),
+  INDEX idx_hatirla_gecerlilik (son_gecerlilik),
+  CONSTRAINT fk_hatirla_kullanici
+    FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

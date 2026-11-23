@@ -13,13 +13,217 @@ if (!headers_sent()) {
 }
 
 if (session_status() === PHP_SESSION_NONE) {
+    $https_aktif = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     session_set_cookie_params(array(
         'lifetime' => 0,
         'path' => '/',
+        'secure' => $https_aktif,
         'httponly' => true,
         'samesite' => 'Lax',
     ));
     session_start();
+}
+
+define('HATIRLA_CEREZ_ADI', 'gorevtakip_hatirla');
+define('HATIRLA_SURE_SANIYE', 30 * 86400);
+
+function hatirla_cerez_ayarla($deger, $son_zaman)
+{
+    if (headers_sent()) {
+        return;
+    }
+    $https_aktif = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    setcookie(HATIRLA_CEREZ_ADI, (string) $deger, array(
+        'expires' => (int) $son_zaman,
+        'path' => '/',
+        'secure' => $https_aktif,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ));
+}
+
+function hatirla_tablosu_hazirla(PDO $pdo)
+{
+    static $hazir = false;
+    if ($hazir) {
+        return true;
+    }
+    try {
+        $surucu = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($surucu === 'sqlite') {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS hatirla_tokenlari (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kullanici_id INTEGER NOT NULL,
+                    secici TEXT NOT NULL UNIQUE,
+                    dogrulayici_hash TEXT NOT NULL,
+                    son_gecerlilik TEXT NOT NULL,
+                    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id) ON DELETE CASCADE ON UPDATE CASCADE
+                );
+            ");
+        } else {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS hatirla_tokenlari (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    kullanici_id INT UNSIGNED NOT NULL,
+                    secici VARCHAR(32) NOT NULL UNIQUE,
+                    dogrulayici_hash CHAR(64) NOT NULL,
+                    son_gecerlilik DATETIME NOT NULL,
+                    olusturma_tarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_hatirla_kullanici (kullanici_id),
+                    INDEX idx_hatirla_gecerlilik (son_gecerlilik),
+                    CONSTRAINT fk_hatirla_kullanici FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        }
+        $hazir = true;
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function hatirla_token_olustur(PDO $pdo, $kullanici_id)
+{
+    $kid = (int) $kullanici_id;
+    if ($kid <= 0 || !hatirla_tablosu_hazirla($pdo)) {
+        return false;
+    }
+    try {
+        $secici = bin2hex(random_bytes(12));
+        $dogrulayici = bin2hex(random_bytes(24));
+        $hash = hash('sha256', $dogrulayici);
+        $son_ts = time() + HATIRLA_SURE_SANIYE;
+        $son_tarih = date('Y-m-d H:i:s', $son_ts);
+
+        // Suresi dolmus eski tokenlari temizle
+        $temizle = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE son_gecerlilik < ?');
+        $temizle->execute(array(date('Y-m-d H:i:s')));
+
+        $ekle = $pdo->prepare('
+            INSERT INTO hatirla_tokenlari (kullanici_id, secici, dogrulayici_hash, son_gecerlilik)
+            VALUES (?, ?, ?, ?)
+        ');
+        $ekle->execute(array($kid, $secici, $hash, $son_tarih));
+        hatirla_cerez_ayarla($secici . ':' . $dogrulayici, $son_ts);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function hatirla_token_sil($pdo = null)
+{
+    if ($pdo instanceof PDO && isset($_COOKIE[HATIRLA_CEREZ_ADI])) {
+        $parcalar = explode(':', (string) $_COOKIE[HATIRLA_CEREZ_ADI], 2);
+        if (count($parcalar) === 2 && preg_match('/^[a-f0-9]{24}$/', $parcalar[0])) {
+            try {
+                if (hatirla_tablosu_hazirla($pdo)) {
+                    $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE secici = ?');
+                    $sil->execute(array($parcalar[0]));
+                }
+            } catch (PDOException $e) {
+                // Cikis akisini bozma
+            }
+        }
+    }
+    hatirla_cerez_ayarla('', time() - 42000);
+    unset($_COOKIE[HATIRLA_CEREZ_ADI]);
+}
+
+function hatirla_tum_tokenlari_sil(PDO $pdo, $kullanici_id)
+{
+    $kid = (int) $kullanici_id;
+    if ($kid <= 0) {
+        return;
+    }
+    try {
+        if (hatirla_tablosu_hazirla($pdo)) {
+            $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE kullanici_id = ?');
+            $sil->execute(array($kid));
+        }
+    } catch (PDOException $e) {
+        // Sessiz gec
+    }
+}
+
+function hatirla_oturum_geri_yukle(PDO $pdo)
+{
+    if (isset($_SESSION['kullanici_id']) && (int) $_SESSION['kullanici_id'] > 0) {
+        return;
+    }
+    if (empty($_COOKIE[HATIRLA_CEREZ_ADI]) || !is_string($_COOKIE[HATIRLA_CEREZ_ADI])) {
+        return;
+    }
+
+    $parcalar = explode(':', $_COOKIE[HATIRLA_CEREZ_ADI], 2);
+    if (
+        count($parcalar) !== 2
+        || !preg_match('/^[a-f0-9]{24}$/', $parcalar[0])
+        || !preg_match('/^[a-f0-9]{48}$/', $parcalar[1])
+    ) {
+        hatirla_cerez_ayarla('', time() - 42000);
+        unset($_COOKIE[HATIRLA_CEREZ_ADI]);
+        return;
+    }
+
+    if (!hatirla_tablosu_hazirla($pdo)) {
+        return;
+    }
+
+    $secici = $parcalar[0];
+    $dogrulayici = $parcalar[1];
+
+    try {
+        $stmt = $pdo->prepare('
+            SELECT ht.id AS token_id, ht.kullanici_id, ht.dogrulayici_hash, ht.son_gecerlilik,
+                   k.ad_soyad, k.rol
+            FROM hatirla_tokenlari ht
+            INNER JOIN kullanicilar k ON k.id = ht.kullanici_id
+            WHERE ht.secici = ?
+            LIMIT 1
+        ');
+        $stmt->execute(array($secici));
+        $kayit = $stmt->fetch();
+
+        if (!$kayit || $kayit['son_gecerlilik'] < date('Y-m-d H:i:s')) {
+            if ($kayit) {
+                $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE id = ?');
+                $sil->execute(array((int) $kayit['token_id']));
+            }
+            hatirla_cerez_ayarla('', time() - 42000);
+            unset($_COOKIE[HATIRLA_CEREZ_ADI]);
+            return;
+        }
+
+        if (!hash_equals((string) $kayit['dogrulayici_hash'], hash('sha256', $dogrulayici))) {
+            // Olasi calinmis token: kaydi sil ve cerezi temizle
+            $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE id = ?');
+            $sil->execute(array((int) $kayit['token_id']));
+            hatirla_cerez_ayarla('', time() - 42000);
+            unset($_COOKIE[HATIRLA_CEREZ_ADI]);
+            return;
+        }
+
+        // Gecerli token: oturumu geri yukle ve tokeni yenile (rotation)
+        session_regenerate_id(true);
+        $_SESSION['kullanici_id'] = (int) $kayit['kullanici_id'];
+        $_SESSION['kullanici_rol'] = $kayit['rol'];
+        $_SESSION['kullanici_ad'] = $kayit['ad_soyad'];
+        unset($_SESSION['csrf_token']);
+
+        $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE id = ?');
+        $sil->execute(array((int) $kayit['token_id']));
+        hatirla_token_olustur($pdo, (int) $kayit['kullanici_id']);
+    } catch (PDOException $e) {
+        // Sessiz gec
+    }
+}
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    hatirla_oturum_geri_yukle($pdo);
 }
 
 function giris_yapili_mi()
@@ -126,8 +330,9 @@ function csrf_dogrula($token)
     return hash_equals($_SESSION['csrf_token'], $token);
 }
 
-function cikis_yap()
+function cikis_yap($pdo = null)
 {
+    hatirla_token_sil($pdo);
     $_SESSION = array();
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
