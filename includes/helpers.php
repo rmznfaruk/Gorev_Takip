@@ -68,14 +68,30 @@ function oncelik_etiketi($oncelik)
     return array('metin' => (string) $oncelik, 'sinif' => 'badge-orta');
 }
 
+function istanbul_simdi($ofset_saniye = 0)
+{
+    try {
+        $tz = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : 'Europe/Istanbul');
+        $simdi = new DateTimeImmutable('now', $tz);
+        $ofset = (int) $ofset_saniye;
+        if ($ofset !== 0) {
+            $simdi = $simdi->modify(($ofset >= 0 ? '+' : '') . $ofset . ' seconds');
+        }
+        return $simdi->format('Y-m-d H:i:s');
+    } catch (Exception $e) {
+        return date('Y-m-d H:i:s', time() + (int) $ofset_saniye);
+    }
+}
+
 function tarih_format($tarih, $saat_goster = false)
 {
-    if (empty($tarih)) {
+    if ($tarih === null || is_bool($tarih) || (!is_string($tarih) && !is_numeric($tarih))) {
         return '-';
     }
-    $zaman = strtotime((string) $tarih);
-    if ($zaman === false) {
-        return (string) $tarih;
+
+    $ham = trim((string) $tarih);
+    if ($ham === '' || $ham === '0' || strpos($ham, '0000-00-00') === 0) {
+        return '-';
     }
 
     $aylar = array(
@@ -83,14 +99,33 @@ function tarih_format($tarih, $saat_goster = false)
         5 => 'May', 6 => 'Haz', 7 => 'Tem', 8 => 'Ağu',
         9 => 'Eyl', 10 => 'Eki', 11 => 'Kas', 12 => 'Ara',
     );
-    $gun = date('d', $zaman);
-    $ay = isset($aylar[(int) date('n', $zaman)]) ? $aylar[(int) date('n', $zaman)] : date('m', $zaman);
-    $yil = date('Y', $zaman);
 
-    if ($saat_goster) {
-        return $gun . ' ' . $ay . ' ' . $yil . ' ' . date('H:i', $zaman);
+    try {
+        $tz = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : 'Europe/Istanbul');
+        $dt = new DateTimeImmutable($ham, $tz);
+        $dt = $dt->setTimezone($tz);
+        $gun = $dt->format('d');
+        $ay_no = (int) $dt->format('n');
+        $ay = isset($aylar[$ay_no]) ? $aylar[$ay_no] : $dt->format('m');
+        $yil = $dt->format('Y');
+        if ($saat_goster) {
+            return $gun . ' ' . $ay . ' ' . $yil . ' ' . $dt->format('H:i');
+        }
+        return $gun . ' ' . $ay . ' ' . $yil;
+    } catch (Exception $e) {
+        $zaman = strtotime($ham);
+        if ($zaman === false) {
+            return (string) $tarih;
+        }
+        $gun = date('d', $zaman);
+        $ay = isset($aylar[(int) date('n', $zaman)]) ? $aylar[(int) date('n', $zaman)] : date('m', $zaman);
+        $yil = date('Y', $zaman);
+
+        if ($saat_goster) {
+            return $gun . ' ' . $ay . ' ' . $yil . ' ' . date('H:i', $zaman);
+        }
+        return $gun . ' ' . $ay . ' ' . $yil;
     }
-    return $gun . ' ' . $ay . ' ' . $yil;
 }
 
 function bas_harfler($ad)
@@ -99,7 +134,13 @@ function bas_harfler($ad)
     if ($temiz === '') {
         return 'GT';
     }
-    $parcalar = preg_split('/\s+/u', $temiz);
+    $parcalar = @preg_split('/\s+/u', $temiz);
+    if (!is_array($parcalar)) {
+        $parcalar = preg_split('/\s+/', $temiz);
+    }
+    if (!is_array($parcalar)) {
+        $parcalar = array($temiz);
+    }
     $harfler = '';
     $sayac = 0;
     foreach ($parcalar as $parca) {
@@ -145,18 +186,47 @@ function birim_secenekleri()
         'elektronik' => 'Elektronik',
         'mekanik' => 'Mekanik',
         'raporlama' => 'Raporlama',
-        'tasarim' => 'Tasarım',
+        'aviyonik' => 'Aviyonik',
     );
+}
+
+function birim_kodu_normalize($birim, $varsayilan = 'genel')
+{
+    if (!is_string($birim) && !is_numeric($birim)) {
+        return $varsayilan;
+    }
+    $temiz = trim((string) $birim);
+    if ($temiz === '') {
+        return $varsayilan;
+    }
+    $anahtar = function_exists('mb_strtolower')
+        ? mb_strtolower($temiz, 'UTF-8')
+        : strtolower($temiz);
+    if (in_array($anahtar, array('tasarim', 'tasarım', "tasari\xCC\x87m", "avi\xCC\x87yoni\xCC\x87k", "avi\xCC\x87yonik", "aviyoni\xCC\x87k"), true)) {
+        return 'aviyonik';
+    }
+    $secenekler = birim_secenekleri();
+    return isset($secenekler[$anahtar]) ? $anahtar : $varsayilan;
+}
+
+function birim_filtre_degerleri($birim_kodu)
+{
+    $kod = birim_kodu_normalize($birim_kodu, '');
+    if ($kod === '') {
+        return array();
+    }
+    if ($kod === 'aviyonik') {
+        return array('aviyonik', 'tasarim', 'Tasarim', 'tasarım', 'Tasarım', 'TASARIM', 'TASARİM', "tasari\xCC\x87m", "TASARI\xCC\x87M");
+    }
+    return array($kod);
 }
 
 function birim_etiketi($birim)
 {
     $secenekler = birim_secenekleri();
-    $anahtar = is_string($birim) ? strtolower(trim($birim)) : 'genel';
-    if (!isset($secenekler[$anahtar])) {
-        $anahtar = 'genel';
-    }
+    $anahtar = birim_kodu_normalize($birim, 'genel');
     return array(
+        'kod' => $anahtar,
         'metin' => $secenekler[$anahtar],
         'sinif' => 'unit-' . $anahtar,
     );
@@ -164,8 +234,15 @@ function birim_etiketi($birim)
 
 function birim_gecerli_mi($birim)
 {
+    if (!is_string($birim)) {
+        return false;
+    }
     $secenekler = birim_secenekleri();
-    return is_string($birim) && isset($secenekler[strtolower(trim($birim))]);
+    $temiz = trim($birim);
+    $anahtar = function_exists('mb_strtolower')
+        ? mb_strtolower($temiz, 'UTF-8')
+        : strtolower($temiz);
+    return isset($secenekler[$anahtar]);
 }
 
 function oda_kodu_uret(PDO $pdo, $on_ek = 'ODA')
@@ -229,10 +306,10 @@ function bildirim_ekle(PDO $pdo, $hedef_kullanici_id, $tur, $mesaj, $link = null
 
     try {
         $stmt = $pdo->prepare('
-            INSERT INTO bildirimler (kullanici_id, tur, mesaj, link, okundu)
-            VALUES (?, ?, ?, ?, 0)
+            INSERT INTO bildirimler (kullanici_id, tur, mesaj, link, okundu, olusturma_tarihi)
+            VALUES (?, ?, ?, ?, 0, ?)
         ');
-        $ok = $stmt->execute(array($hedef_id, $tur_temiz, $mesaj_temiz, $link_temiz));
+        $ok = $stmt->execute(array($hedef_id, $tur_temiz, $mesaj_temiz, $link_temiz, istanbul_simdi()));
         if ($ok) {
             // Kullanici basina en guncel 100 bildirimi tut, eskilerini temizle
             $esik_stmt = $pdo->prepare('
@@ -268,10 +345,10 @@ function aktivite_kaydet(PDO $pdo, $proje_id, $kullanici_id, $mesaj)
 
     try {
         $stmt = $pdo->prepare('
-            INSERT INTO aktiviteler (proje_id, kullanici_id, mesaj)
-            VALUES (?, ?, ?)
+            INSERT INTO aktiviteler (proje_id, kullanici_id, mesaj, olusturma_tarihi)
+            VALUES (?, ?, ?, ?)
         ');
-        $ok = $stmt->execute(array($pid, $kid, $mesaj_temiz));
+        $ok = $stmt->execute(array($pid, $kid, $mesaj_temiz, istanbul_simdi()));
         if ($ok) {
             // Oda basina en guncel 200 aktiviteyi tut, eskilerini otomatik temizle
             $esik_stmt = $pdo->prepare('
@@ -377,8 +454,8 @@ function gorev_durumu_alt_gorevlerle_senkronla(PDO $pdo, $gorev_id, $mevcut_duru
     }
 
     if ($yeni_durum !== $mevcut_durum) {
-        $guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = ?');
-        $guncelle->execute(array($yeni_durum, $gid));
+        $guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = ? WHERE id = ?');
+        $guncelle->execute(array($yeni_durum, istanbul_simdi(), $gid));
     }
 
     $ilerleme = gorev_ilerleme_hesapla(array('durum' => $yeni_durum), $toplam, $tamamlanan);

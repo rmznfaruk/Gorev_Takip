@@ -7,6 +7,7 @@
 -- (InfinityFree / paylasimli hosting phpMyAdmin icinde once veritabanini secip dogrudan bu dosyayi ice aktarin.)
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS sistem_migrasyonlari;
 DROP TABLE IF EXISTS hatirla_tokenlari;
 DROP TABLE IF EXISTS aktiviteler;
 DROP TABLE IF EXISTS bildirimler;
@@ -189,3 +190,14 @@ CREATE TABLE hatirla_tokenlari (
     FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id)
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE sistem_migrasyonlari (
+  ad VARCHAR(80) PRIMARY KEY,
+  uygulandi_tarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET time_zone = '+03:00';
+
+INSERT IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES
+  ('tz_istanbul_v1', NOW()),
+  ('birim_aviyonik_v1', NOW());

@@ -302,16 +302,16 @@ require_once __DIR__ . '/includes/header.php';
                                 $g_ilerleme = (int) $gorev['ilerleme'];
                                 ?>
                                 <tr>
-                                    <td>
+                                    <td data-label="Görev">
                                         <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link">
                                             <span class="task-id-muted"><?php echo e($gorev['proje_kodu']); ?></span>
                                             <span><?php echo e($gorev['baslik']); ?></span>
                                         </a>
                                     </td>
-                                    <td>
+                                    <td data-label="Birim">
                                         <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
                                     </td>
-                                    <td>
+                                    <td data-label="İlerleme">
                                         <div class="inline-progress">
                                             <div class="inline-progress-bar">
                                                 <div class="inline-progress-fill<?php echo $g_ilerleme >= 100 ? ' is-complete' : ''; ?>" style="width: <?php echo $g_ilerleme; ?>%;"></div>
@@ -319,8 +319,8 @@ require_once __DIR__ . '/includes/header.php';
                                             <span class="inline-progress-val">%<?php echo $g_ilerleme; ?></span>
                                         </div>
                                     </td>
-                                    <td class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
-                                    <td>
+                                    <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                                    <td data-label="Durum">
                                         <select class="status-select <?php echo e($durum_sinifi); ?>"
                                                 aria-label="Görev durumunu değiştir"
                                                 data-task-status
@@ -376,7 +376,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
             <?php if ($toplam_alt_gorev > 0): ?>
-                <div style="margin-top:0.75rem;padding-top:0.65rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;">
+                <div style="margin-top:0.75rem;padding-top:0.65rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;font-size:0.8rem;">
                     <span class="text-muted">Haftalık İlerleme</span>
                     <span class="mono" style="font-weight:600;color:var(--accent);"><?php echo (int) $toplam_alt_tamamlanan; ?> / <?php echo (int) $toplam_alt_gorev; ?> Haftalık Adım</span>
                 </div>

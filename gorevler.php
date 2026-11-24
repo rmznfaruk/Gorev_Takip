@@ -12,13 +12,10 @@ $gorunum = isset($_GET['gorunum']) && $_GET['gorunum'] === 'benim' ? 'benim' : '
 $filtre_q = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
 $filtre_durum = isset($_GET['durum']) ? trim((string) $_GET['durum']) : '';
 $filtre_oncelik = isset($_GET['oncelik']) ? trim((string) $_GET['oncelik']) : '';
-$filtre_birim = isset($_GET['birim']) ? strtolower(trim((string) $_GET['birim'])) : '';
+$filtre_birim = isset($_GET['birim']) ? birim_kodu_normalize($_GET['birim'], '') : '';
 $filtre_proje = isset($_GET['proje_id']) ? (int) $_GET['proje_id'] : 0;
 
 $birimler = birim_secenekleri();
-if ($filtre_birim !== '' && !isset($birimler[$filtre_birim])) {
-    $filtre_birim = '';
-}
 
 // Oda izolasyonu: Yalnizca kullanicinin yonetici veya uye oldugu odalardaki gorevler
 $kosullar = array(
@@ -48,8 +45,10 @@ if (in_array($filtre_oncelik, array('dusuk', 'orta', 'yuksek'), true)) {
     $parametreler[] = $filtre_oncelik;
 }
 if ($filtre_birim !== '') {
-    $kosullar[] = 'g.birim = ?';
-    $parametreler[] = $filtre_birim;
+    $birim_degerleri = birim_filtre_degerleri($filtre_birim);
+    $birim_ph = implode(',', array_fill(0, count($birim_degerleri), '?'));
+    $kosullar[] = 'g.birim IN (' . $birim_ph . ')';
+    $parametreler = array_merge($parametreler, $birim_degerleri);
 }
 if ($filtre_proje > 0) {
     $kosullar[] = 'g.proje_id = ?';
@@ -182,8 +181,8 @@ require_once __DIR__ . '/includes/header.php';
                         <?php
                         $durum = durum_etiketi($gorev['durum']);
                         $oncelik = oncelik_etiketi($gorev['oncelik']);
-                        $gorev_birim_kodu = isset($gorev['birim']) ? $gorev['birim'] : 'genel';
-                        $birim_bilgi = birim_etiketi($gorev_birim_kodu);
+                        $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
+                        $gorev_birim_kodu = $birim_bilgi['kod'];
                         $durum_sinifi = 'status-' . $gorev['durum'];
                         $degistirebilir = proje_yonetebilir_mi(array('yonetici_id' => $gorev['proje_yonetici_id']), $kullanici)
                             || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
@@ -192,22 +191,22 @@ require_once __DIR__ . '/includes/header.php';
                             data-status="<?php echo e($gorev['durum']); ?>"
                             data-priority="<?php echo e($gorev['oncelik']); ?>"
                             data-unit="<?php echo e($gorev_birim_kodu); ?>"
-                            data-search-text="<?php echo e($gorev['baslik'] . ' ' . $gorev['proje_kodu'] . ' ' . $gorev['proje_adi'] . ' ' . $gorev['atanan_adi'] . ' ' . $birim_bilgi['metin']); ?>">
-                            <td>
+                            data-search-text="<?php echo e($gorev['baslik'] . ' ' . $gorev['proje_kodu'] . ' ' . $gorev['proje_adi'] . ' ' . (string) $gorev['atanan_adi'] . ' ' . $birim_bilgi['metin']); ?>">
+                            <td data-label="Görev">
                                 <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link">
                                     <span class="task-id-muted">#<?php echo (int) $gorev['id']; ?></span>
                                     <span><?php echo e($gorev['baslik']); ?></span>
                                 </a>
                             </td>
-                            <td>
+                            <td data-label="Proje">
                                 <a href="proje_detay.php?id=<?php echo (int) $gorev['proje_id']; ?>" class="code-chip" title="<?php echo e($gorev['proje_adi']); ?>">
                                     <?php echo e($gorev['proje_kodu']); ?>
                                 </a>
                             </td>
-                            <td>
+                            <td data-label="Birim">
                                 <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
                             </td>
-                            <td>
+                            <td data-label="Atanan">
                                 <?php if ($gorev['atanan_adi']): ?>
                                     <span class="assignee-cell">
                                         <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
@@ -217,14 +216,14 @@ require_once __DIR__ . '/includes/header.php';
                                     <span class="assignee-unassigned">Atanmadı</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Öncelik">
                                 <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
                                     <span class="priority-dot" aria-hidden="true"></span>
                                     <span><?php echo e($oncelik['metin']); ?></span>
                                 </span>
                             </td>
-                            <td class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
-                            <td>
+                            <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                            <td data-label="Durum">
                                 <?php if ($degistirebilir): ?>
                                     <select class="status-select <?php echo e($durum_sinifi); ?>"
                                             aria-label="Görev durumunu değiştir"

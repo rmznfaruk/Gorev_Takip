@@ -55,11 +55,28 @@ Kurulum sonrasında veritabanı tamamen boş (0 kullanıcı, 0 oda, 0 görev) ba
 
 ## Canlı Sunucu Kurulumu (InfinityFree / Paylaşımlı Hosting)
 
+### İlk Kez Kurulum (Temiz Veritabanı)
+
 1. InfinityFree kontrol panelinden yeni bir MySQL veritabanı oluşturun.
-2. **phpMyAdmin** içinde oluşturduğunuz veritabanını seçin ve `database.sql` dosyasını içe aktarın (InfinityFree'de veritabanı zaten seçili olduğu için `CREATE DATABASE` / `USE` satırlarını kaldırıp doğrudan `SET FOREIGN_KEY_CHECKS` satırından itibaren çalıştırabilirsiniz).
+2. **phpMyAdmin** içinde oluşturduğunuz veritabanını seçin ve `database.sql` dosyasını içe aktarın (InfinityFree'de veritabanı zaten seçili olduğu için `CREATE DATABASE` / `USE` satırları yoktur; doğrudan `SET FOREIGN_KEY_CHECKS` satırından itibaren çalıştırılır ve `sistem_migrasyonlari` tablosu başlangıç işaretleriyle oluşturulur).
 3. Tüm proje dosyalarını FTP veya Dosya Yöneticisi ile `htdocs/` dizinine yükleyin. `uploads/` klasörünün yazma iznine (`755`) ve `.htaccess` dosyalarının (`uploads/`, `config/`, `includes/`, `storage/`) eksiksiz yüklendiğine emin olun.
-4. `config/db.php` içindeki `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` varsayılan değerlerini InfinityFree MySQL bilgilerinizle güncelleyin.
-5. Uygulamayı açıp `Kayıt Ol` ile hesabınızı oluşturun ve ilk çalışma odanızı kurarak **Ekip Lideri** olarak ekibinizi davet edin.
+4. `config/db.php` içindeki `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` varsayılan değerlerini (veya sunucu ortam değişkenlerini) InfinityFree MySQL bilgilerinizle güncelleyin.
+5. Uygulama PHP tarafında `Europe/Istanbul` (`UTC+3`) ve MySQL oturumunda sayısal `SET time_zone = '+03:00'` kullanır; böylece InfinityFree MySQL sunucusunda adlandırılmış saat dilimi tablosu olmasa dahi tüm kayıtlar Türkiye saatinde tutulur.
+6. Uygulamayı açıp `Kayıt Ol` ile hesabınızı oluşturun ve ilk çalışma odanızı kurarak **Ekip Lideri** olarak ekibinizi davet edin.
+
+### Mevcut Canlı Veritabanını Güncelleme (InfinityFree Migrasyonu)
+
+Halihazırda InfinityFree üzerinde çalışan eski bir kurulumunuz varsa:
+
+1. Güncel PHP, CSS ve JS dosyalarını (`config/`, `includes/`, `assets/`, `migrations/` ve kök `.php` sayfaları) `htdocs/` dizinine yükleyin.
+2. **Önerilen Adım (phpMyAdmin):** InfinityFree kontrol panelinden **phpMyAdmin**'e girip mevcut veritabanınızı seçin ve `migrations/infinityfree_migration.sql` dosyasını **İçe Aktar** veya **SQL** sekmesinden çalıştırın:
+   - Bu betik **v3 10-tablo şemasını** (`kullanicilar`, `projeler`, `proje_uyeleri`, `gorevler`, `alt_gorevler`, `yorumlar`, `gorev_dosyalari`, `bildirimler`, `aktiviteler`, `hatirla_tokenlari`) hedefler; daha eski pre-v3 bir veritabanınız varsa önce v3 tablolarını veya `config/db.php` otomatik migrasyonunu çalıştırın.
+   - `CREATE PROCEDURE` veya `SUPER` yetkisi gerektirmez; InfinityFree paylaşımlı MySQL/MariaDB ile tam uyumludur.
+   - `gorevler.birim` sütunundaki eski `tasarim` / `Tasarım` kayıtlarını `guncelleme_tarihi` değerini bozmadan `aviyonik` olarak günceller.
+   - `SET time_zone = '+03:00'` öncesinde `TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW())` ile sunucunun UTC+3 farkını dinamik hesaplar ve tüm geçmiş zaman damgalarını tek seferlik işlem (transaction) içinde `Europe/Istanbul` saatine kaydırır.
+   - `sistem_migrasyonlari` tablosuna `'tz_istanbul_v1'` ve `'birim_aviyonik_v1'` kayıtlarını işlediği için yanlışlıkla birden fazla kez çalıştırılsa bile **çift kaydırma yapmaz (idempotent)**.
+3. **Otomatik Yedek Koruma:** Yeni PHP dosyaları yüklendikten sonra `config/db.php` içindeki bağlantı başlatıcısı da `sistem_migrasyonlari` tablosunu kontrol eder; migrasyon henüz uygulanmamışsa ilk istekte aynı kaydırmayı ve birim dönüşümünü güvenli biçimde tamamlar.
+4. İşlem sonrasında uygulama içindeki tüm aktivite kayıtlarının, yorumların ve görev zaman damgalarının Türkiye saati (`UTC+3`) ile görüntülendiğini ve `Aviyonik` biriminin seçilebilir/filtrelenebilir olduğunu doğrulayın.
 
 ## Yerel Kurulum (MySQL / XAMPP / AppServ)
 
@@ -99,6 +116,8 @@ php -S 127.0.0.1:8080
 │   ├── footer.php
 │   ├── header.php
 │   └── helpers.php
+├── migrations/
+│   └── infinityfree_migration.sql
 ├── storage/
 │   └── .htaccess
 ├── uploads/

@@ -133,8 +133,8 @@ if (!proje_erisim_var_mi($pdo, $proje_id, $kullanici)) {
     exit;
 }
 
-$ekle = $pdo->prepare('INSERT INTO yorumlar (gorev_id, kullanici_id, icerik) VALUES (?, ?, ?)');
-$ekle->execute(array($gorev_id, $kullanici_id, $icerik));
+$ekle = $pdo->prepare('INSERT INTO yorumlar (gorev_id, kullanici_id, icerik, olusturma_tarihi) VALUES (?, ?, ?, ?)');
+$ekle->execute(array($gorev_id, $kullanici_id, $icerik, istanbul_simdi()));
 $yeni_id = (int) $pdo->lastInsertId();
 
 aktivite_kaydet(
@@ -156,7 +156,7 @@ if (!empty($gorev_kayit['olusturan_id']) && (int) $gorev_kayit['olusturan_id'] !
 $cek = $pdo->prepare('SELECT olusturma_tarihi FROM yorumlar WHERE id = ? LIMIT 1');
 $cek->execute(array($yeni_id));
 $kayit = $cek->fetch();
-$tarih_ham = $kayit ? $kayit['olusturma_tarihi'] : date('Y-m-d H:i:s');
+$tarih_ham = $kayit ? $kayit['olusturma_tarihi'] : istanbul_simdi();
 
 http_response_code(201);
 echo json_encode(array(

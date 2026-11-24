@@ -84,8 +84,8 @@ if (!$yetkili) {
     exit;
 }
 
-$guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = ?');
-$guncelle->execute(array($durum, $gorev_id));
+$guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = ? WHERE id = ?');
+$guncelle->execute(array($durum, istanbul_simdi(), $gorev_id));
 
 $etiket = durum_etiketi($durum);
 aktivite_kaydet(

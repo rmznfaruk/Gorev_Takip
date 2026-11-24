@@ -74,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_ekle('success', 'Oda duyurusu kaldırıldı.');
         } else {
             $duyuru = metin_kisalt($duyuru, 1000);
-            $guncelle = $pdo->prepare('UPDATE projeler SET duyuru = ?, duyuru_tarihi = CURRENT_TIMESTAMP WHERE id = ?');
-            $guncelle->execute(array($duyuru, $proje_id));
+            $guncelle = $pdo->prepare('UPDATE projeler SET duyuru = ?, duyuru_tarihi = ? WHERE id = ?');
+            $guncelle->execute(array($duyuru, istanbul_simdi(), $proje_id));
             aktivite_kaydet($pdo, $proje_id, $kullanici_id, $kullanici['ad_soyad'] . ' oda duyurusunu güncelledi.');
             flash_ekle('success', 'Oda duyurusu güncellendi.');
         }
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $atanan_id = isset($_POST['atanan_id']) && (int) $_POST['atanan_id'] > 0 ? (int) $_POST['atanan_id'] : null;
         $oncelik = isset($_POST['oncelik']) ? (string) $_POST['oncelik'] : 'orta';
         $durum = isset($_POST['durum']) ? (string) $_POST['durum'] : 'yapilacak';
-        $birim = isset($_POST['birim']) ? strtolower(trim((string) $_POST['birim'])) : 'genel';
+        $birim = isset($_POST['birim']) ? birim_kodu_normalize($_POST['birim']) : 'genel';
         $son_tarih = isset($_POST['son_tarih']) && $_POST['son_tarih'] !== '' ? $_POST['son_tarih'] : null;
 
         if (!in_array($oncelik, array('dusuk', 'orta', 'yuksek'), true)) {
@@ -147,9 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (!in_array($durum, array('yapilacak', 'devam_ediyor', 'tamamlandi'), true)) {
             $durum = 'yapilacak';
-        }
-        if (!isset($birimler[$birim])) {
-            $birim = 'genel';
         }
 
         if ($baslik === '') {
@@ -163,11 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             yonlendir('proje_detay.php?id=' . $proje_id);
         }
 
+        $simdi = istanbul_simdi();
         $ekle = $pdo->prepare('
-            INSERT INTO gorevler (proje_id, baslik, aciklama, atanan_id, olusturan_id, durum, oncelik, birim, son_tarih)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO gorevler (proje_id, baslik, aciklama, atanan_id, olusturan_id, durum, oncelik, birim, son_tarih, olusturma_tarihi, guncelleme_tarihi)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
-        $ekle->execute(array($proje_id, $baslik, $aciklama, $atanan_id, $kullanici_id, $durum, $oncelik, $birim, $son_tarih));
+        $ekle->execute(array($proje_id, $baslik, $aciklama, $atanan_id, $kullanici_id, $durum, $oncelik, $birim, $son_tarih, $simdi, $simdi));
         $yeni_gorev_id = (int) $pdo->lastInsertId();
 
         aktivite_kaydet(
@@ -215,8 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             yonlendir('proje_detay.php?id=' . $proje_id);
         }
 
-        $ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki) VALUES (?, ?, ?, ?)');
-        $ekle->execute(array($proje_id, $eklenecek_id, $proje_rolu, 'uye'));
+        $ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki, katilim_tarihi) VALUES (?, ?, ?, ?, ?)');
+        $ekle->execute(array($proje_id, $eklenecek_id, $proje_rolu, 'uye', istanbul_simdi()));
 
         aktivite_kaydet($pdo, $proje_id, $kullanici_id, $kullanici['ad_soyad'] . ' odaya yeni bir üye ekledi.');
         bildirim_ekle(
@@ -278,10 +276,7 @@ if ($proje_kurucu_yetkisi && yonetici_mi($kullanici)) {
 }
 
 // Birim filtresi (GET ?birim=...)
-$filtre_birim = isset($_GET['birim']) ? strtolower(trim((string) $_GET['birim'])) : '';
-if ($filtre_birim !== '' && !isset($birimler[$filtre_birim])) {
-    $filtre_birim = '';
-}
+$filtre_birim = isset($_GET['birim']) ? birim_kodu_normalize($_GET['birim'], '') : '';
 
 // Projenin gorevleri (alt gorev sayilari dahil)
 $gorev_sql = '
@@ -295,8 +290,10 @@ $gorev_sql = '
 ';
 $gorev_params = array($proje_id);
 if ($filtre_birim !== '') {
-    $gorev_sql .= ' AND g.birim = ?';
-    $gorev_params[] = $filtre_birim;
+    $birim_degerleri = birim_filtre_degerleri($filtre_birim);
+    $birim_ph = implode(',', array_fill(0, count($birim_degerleri), '?'));
+    $gorev_sql .= ' AND g.birim IN (' . $birim_ph . ')';
+    $gorev_params = array_merge($gorev_params, $birim_degerleri);
 }
 $gorev_sql .= '
     ORDER BY
@@ -473,7 +470,7 @@ require_once __DIR__ . '/includes/header.php';
                         <?php
                         $oncelik = oncelik_etiketi($gorev['oncelik']);
                         $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
-                        $gorev_birim_kodu = isset($gorev['birim']) ? $gorev['birim'] : 'genel';
+                        $gorev_birim_kodu = $birim_bilgi['kod'];
                         $durum_sinifi = 'status-' . $gorev['durum'];
                         $durum_degistirebilir = $proje_lider_yetkisi || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
                         $g_alt_toplam = (int) $gorev['alt_toplam'];
@@ -569,13 +566,13 @@ require_once __DIR__ . '/includes/header.php';
                             <?php
                             $oncelik = oncelik_etiketi($gorev['oncelik']);
                             $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
-                            $gorev_birim_kodu = isset($gorev['birim']) ? $gorev['birim'] : 'genel';
+                            $gorev_birim_kodu = $birim_bilgi['kod'];
                             $durum_sinifi = 'status-' . $gorev['durum'];
                             $durum_degistirebilir = $proje_lider_yetkisi || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
                             $g_ilerleme = (int) $gorev['ilerleme'];
                             ?>
                             <tr data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>">
-                                <td>
+                                <td data-label="Görev">
                                     <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link">
                                         <span class="task-id-muted">#<?php echo (int) $gorev['id']; ?></span>
                                         <span><?php echo e($gorev['baslik']); ?></span>
@@ -586,14 +583,14 @@ require_once __DIR__ . '/includes/header.php';
                                         </a>
                                     </div>
                                 </td>
-                                <td><span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span></td>
-                                <td>
+                                <td data-label="Birim"><span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span></td>
+                                <td data-label="Öncelik">
                                     <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
                                         <span class="priority-dot" aria-hidden="true"></span>
                                         <span><?php echo e($oncelik['metin']); ?></span>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="İlerleme">
                                     <div class="inline-progress">
                                         <div class="inline-progress-bar">
                                             <div class="inline-progress-fill<?php echo $g_ilerleme >= 100 ? ' is-complete' : ''; ?>" style="width: <?php echo $g_ilerleme; ?>%;"></div>
@@ -601,7 +598,7 @@ require_once __DIR__ . '/includes/header.php';
                                         <span class="inline-progress-val">%<?php echo $g_ilerleme; ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Atanan">
                                     <?php if ($gorev['atanan_adi']): ?>
                                         <span class="assignee-cell">
                                             <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
@@ -611,8 +608,8 @@ require_once __DIR__ . '/includes/header.php';
                                         <span class="assignee-unassigned">Atanmadı</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
-                                <td>
+                                <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                                <td data-label="Durum">
                                     <?php if ($durum_degistirebilir): ?>
                                         <select class="status-select <?php echo e($durum_sinifi); ?>"
                                                 aria-label="Görev durumunu değiştir"
@@ -668,14 +665,14 @@ require_once __DIR__ . '/includes/header.php';
                         $birim_lideri_mi = ($uye['yetki'] === 'lider');
                         ?>
                         <tr>
-                            <td>
+                            <td data-label="Üye">
                                 <span class="assignee-cell">
                                     <span class="avatar avatar-sm"><?php echo e(bas_harfler($uye['ad_soyad'])); ?></span>
                                     <strong><?php echo e($uye['ad_soyad']); ?></strong>
                                 </span>
                             </td>
-                            <td class="text-muted"><?php echo e($uye['unvan'] !== '' ? $uye['unvan'] : $uye['proje_rolu']); ?></td>
-                            <td>
+                            <td data-label="Unvan / Rol" class="text-muted"><?php echo e($uye['unvan'] !== '' ? $uye['unvan'] : $uye['proje_rolu']); ?></td>
+                            <td data-label="Oda Yetkisi">
                                 <?php if ($kurucu_mu): ?>
                                     <span class="badge badge-yonetici">Ekip Lideri</span>
                                 <?php elseif ($birim_lideri_mi): ?>
@@ -685,7 +682,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <?php if ($proje_kurucu_yetkisi): ?>
-                                <td style="text-align:right;white-space:nowrap;">
+                                <td data-label="İşlem" class="cell-actions-right">
                                     <?php if (!$kurucu_mu): ?>
                                         <form method="post" action="proje_detay.php?id=<?php echo $proje_id; ?>" style="display:inline;">
                                             <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">

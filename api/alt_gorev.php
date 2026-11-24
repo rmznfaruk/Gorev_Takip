@@ -129,10 +129,10 @@ if ($islem === 'ekle') {
     $yeni_sira = (int) $sira_stmt->fetchColumn();
 
     $ekle = $pdo->prepare('
-        INSERT INTO alt_gorevler (gorev_id, hafta_etiketi, baslik, atanan_id, son_tarih, tamamlandi, sira)
-        VALUES (?, ?, ?, ?, ?, 0, ?)
+        INSERT INTO alt_gorevler (gorev_id, hafta_etiketi, baslik, atanan_id, son_tarih, tamamlandi, sira, olusturma_tarihi)
+        VALUES (?, ?, ?, ?, ?, 0, ?, ?)
     ');
-    $ekle->execute(array($gorev_id, $hafta_etiketi, $baslik, $atanan_id, $son_tarih, $yeni_sira));
+    $ekle->execute(array($gorev_id, $hafta_etiketi, $baslik, $atanan_id, $son_tarih, $yeni_sira, istanbul_simdi()));
     $yeni_id = (int) $pdo->lastInsertId();
 
     if ($atanan_id !== null) {

@@ -62,15 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sifre_hash = password_hash($sifre, PASSWORD_DEFAULT);
         $varsayilan_unvan = ($unvan !== '') ? $unvan : 'Yazılım Geliştirici';
 
+        $simdi = istanbul_simdi();
         $ekle = $pdo->prepare(
-            'INSERT INTO kullanicilar (ad_soyad, eposta, sifre_hash, rol, unvan) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO kullanicilar (ad_soyad, eposta, sifre_hash, rol, unvan, olusturma_tarihi) VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $ekle->execute(array($ad_soyad, $eposta, $sifre_hash, 'uye', $varsayilan_unvan));
+        $ekle->execute(array($ad_soyad, $eposta, $sifre_hash, 'uye', $varsayilan_unvan, $simdi));
         $yeni_kullanici_id = (int) $pdo->lastInsertId();
 
         if ($hedef_oda) {
-            $uye_ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki) VALUES (?, ?, ?, ?)');
-            $uye_ekle->execute(array((int) $hedef_oda['id'], $yeni_kullanici_id, 'Ekip Üyesi', 'uye'));
+            $uye_ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki, katilim_tarihi) VALUES (?, ?, ?, ?, ?)');
+            $uye_ekle->execute(array((int) $hedef_oda['id'], $yeni_kullanici_id, 'Ekip Üyesi', 'uye', $simdi));
 
             aktivite_kaydet(
                 $pdo,

@@ -120,10 +120,10 @@ require_once __DIR__ . '/includes/header.php';
         <a href="takvim.php?ay=<?php echo (int) date('n'); ?>&amp;yil=<?php echo (int) date('Y'); ?><?php echo $proje_param; ?>" class="btn btn-ghost btn-sm">Bugün</a>
     </div>
 
-    <form method="get" action="takvim.php" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+    <form method="get" action="takvim.php" class="calendar-filter-form">
         <input type="hidden" name="ay" value="<?php echo $ay; ?>">
         <input type="hidden" name="yil" value="<?php echo $yil; ?>">
-        <select name="proje_id" class="form-control form-control-sm" aria-label="Oda filtresi" onchange="this.form.submit()" style="min-width:190px;">
+        <select name="proje_id" class="form-control form-control-sm calendar-filter-select" aria-label="Oda filtresi" onchange="this.form.submit()">
             <option value="0">Tüm Odalarım (<?php echo count($aylik_gorevler); ?> görev)</option>
             <?php foreach ($proje_listesi as $oda): ?>
                 <option value="<?php echo (int) $oda['id']; ?>"<?php echo $filtre_proje === (int) $oda['id'] ? ' selected' : ''; ?>>

@@ -18,8 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $islem = isset($_POST['islem']) ? $_POST['islem'] : '';
 
     if ($islem === 'profil_guncelle') {
-        $ad_soyad = isset($_POST['ad_soyad']) ? trim($_POST['ad_soyad']) : '';
-        $unvan = isset($_POST['unvan']) ? trim($_POST['unvan']) : '';
+        $ad_soyad = isset($_POST['ad_soyad']) ? trim((string) $_POST['ad_soyad']) : '';
+        $unvan = isset($_POST['unvan']) ? trim((string) $_POST['unvan']) : '';
 
         if ($ad_soyad === '') {
             flash_ekle('error', 'Ad soyad alanı boş bırakılamaz.');

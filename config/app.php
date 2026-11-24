@@ -5,6 +5,14 @@
  * InfinityFree veya canli sunucuda bu dosyadan kolayca duzenlenebilir.
  */
 
+if (!defined('APP_TIMEZONE')) {
+    define('APP_TIMEZONE', 'Europe/Istanbul');
+}
+
+if (function_exists('date_default_timezone_set')) {
+    date_default_timezone_set(APP_TIMEZONE);
+}
+
 if (!defined('ODA_KODU_ON_EK')) {
     $env_on_ek = getenv('ODA_KODU_ON_EK');
     define(

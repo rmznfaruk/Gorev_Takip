@@ -67,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $atanan_id = isset($_POST['atanan_id']) && (int) $_POST['atanan_id'] > 0 ? (int) $_POST['atanan_id'] : null;
         $durum = isset($_POST['durum']) ? (string) $_POST['durum'] : $gorev['durum'];
         $oncelik = isset($_POST['oncelik']) ? (string) $_POST['oncelik'] : $gorev['oncelik'];
-        $birim = isset($_POST['birim']) ? strtolower(trim((string) $_POST['birim'])) : (isset($gorev['birim']) ? $gorev['birim'] : 'genel');
+        $varsayilan_birim = birim_kodu_normalize(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
+        $birim = isset($_POST['birim']) ? birim_kodu_normalize($_POST['birim'], '') : $varsayilan_birim;
         $son_tarih = isset($_POST['son_tarih']) && $_POST['son_tarih'] !== '' ? $_POST['son_tarih'] : null;
 
         if (!in_array($durum, array('yapilacak', 'devam_ediyor', 'tamamlandi'), true)) {
@@ -76,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($oncelik, array('dusuk', 'orta', 'yuksek'), true)) {
             $oncelik = $gorev['oncelik'];
         }
-        if (!isset($birimler[$birim])) {
-            $birim = isset($gorev['birim']) && isset($birimler[$gorev['birim']]) ? $gorev['birim'] : 'genel';
+        if ($birim === '') {
+            $birim = $varsayilan_birim;
         }
         if ($baslik === '') {
             flash_ekle('error', 'Görev başlığı boş bırakılamaz.');
@@ -92,10 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $guncelle = $pdo->prepare('
             UPDATE gorevler
-            SET baslik = ?, aciklama = ?, atanan_id = ?, durum = ?, oncelik = ?, birim = ?, son_tarih = ?, guncelleme_tarihi = CURRENT_TIMESTAMP
+            SET baslik = ?, aciklama = ?, atanan_id = ?, durum = ?, oncelik = ?, birim = ?, son_tarih = ?, guncelleme_tarihi = ?
             WHERE id = ?
         ');
-        $guncelle->execute(array($baslik, $aciklama, $atanan_id, $durum, $oncelik, $birim, $son_tarih, $gorev_id));
+        $guncelle->execute(array($baslik, $aciklama, $atanan_id, $durum, $oncelik, $birim, $son_tarih, istanbul_simdi(), $gorev_id));
 
         aktivite_kaydet($pdo, (int) $gorev['proje_id'], $kullanici_id, $kullanici['ad_soyad'] . ', "' . $baslik . '" görevini güncelledi.');
         if ($atanan_id !== null && (int) $gorev['atanan_id'] !== $atanan_id) {
@@ -143,8 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $yeni_durum = isset($_POST['durum']) ? $_POST['durum'] : '';
         if (in_array($yeni_durum, array('yapilacak', 'devam_ediyor', 'tamamlandi'), true)) {
-            $guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = CURRENT_TIMESTAMP WHERE id = ?');
-            $guncelle->execute(array($yeni_durum, $gorev_id));
+            $guncelle = $pdo->prepare('UPDATE gorevler SET durum = ?, guncelleme_tarihi = ? WHERE id = ?');
+            $guncelle->execute(array($yeni_durum, istanbul_simdi(), $gorev_id));
             $etiket = durum_etiketi($yeni_durum);
             aktivite_kaydet($pdo, (int) $gorev['proje_id'], $kullanici_id, $kullanici['ad_soyad'] . ', "' . $gorev['baslik'] . '" görevinin durumunu "' . $etiket['metin'] . '" yaptı.');
             if (!empty($gorev['atanan_id'])) {
@@ -187,10 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $yeni_sira = (int) $sira_stmt->fetchColumn();
 
         $ekle = $pdo->prepare('
-            INSERT INTO alt_gorevler (gorev_id, hafta_etiketi, baslik, atanan_id, son_tarih, tamamlandi, sira)
-            VALUES (?, ?, ?, ?, ?, 0, ?)
+            INSERT INTO alt_gorevler (gorev_id, hafta_etiketi, baslik, atanan_id, son_tarih, tamamlandi, sira, olusturma_tarihi)
+            VALUES (?, ?, ?, ?, ?, 0, ?, ?)
         ');
-        $ekle->execute(array($gorev_id, $hafta_etiketi, $alt_baslik, $alt_atanan, $alt_son_tarih, $yeni_sira));
+        $ekle->execute(array($gorev_id, $hafta_etiketi, $alt_baslik, $alt_atanan, $alt_son_tarih, $yeni_sira, istanbul_simdi()));
 
         if ($alt_atanan !== null) {
             bildirim_ekle($pdo, $alt_atanan, 'alt_gorev', $kullanici['ad_soyad'] . ', "' . $hafta_etiketi . '" planına size alt görev atadı: ' . $alt_baslik, 'gorev_detay.php?id=' . $gorev_id);
@@ -236,11 +237,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($islem === 'yorum_ekle') {
-        $icerik = isset($_POST['icerik']) ? trim($_POST['icerik']) : '';
+        $icerik = isset($_POST['icerik']) ? trim((string) $_POST['icerik']) : '';
         $uzunluk = function_exists('mb_strlen') ? mb_strlen($icerik, 'UTF-8') : strlen($icerik);
         if ($uzunluk >= 2 && $uzunluk <= 2000) {
-            $ekle = $pdo->prepare('INSERT INTO yorumlar (gorev_id, kullanici_id, icerik) VALUES (?, ?, ?)');
-            $ekle->execute(array($gorev_id, $kullanici_id, $icerik));
+            $ekle = $pdo->prepare('INSERT INTO yorumlar (gorev_id, kullanici_id, icerik, olusturma_tarihi) VALUES (?, ?, ?, ?)');
+            $ekle->execute(array($gorev_id, $kullanici_id, $icerik, istanbul_simdi()));
             aktivite_kaydet($pdo, (int) $gorev['proje_id'], $kullanici_id, $kullanici['ad_soyad'] . ', "' . $gorev['baslik'] . '" görevine yorum ekledi.');
             if (!empty($gorev['atanan_id'])) {
                 bildirim_ekle($pdo, (int) $gorev['atanan_id'], 'yorum', $kullanici['ad_soyad'] . ', "' . $gorev['baslik'] . '" görevine yorum yazdı.', 'gorev_detay.php?id=' . $gorev_id);
@@ -339,10 +340,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $ekle = $pdo->prepare("
-            INSERT INTO gorev_dosyalari (gorev_id, kullanici_id, tur, baslik, dosya_yolu, harici_url, dosya_boyutu, mime_tipi)
-            VALUES (?, ?, 'dosya', ?, ?, NULL, ?, ?)
+            INSERT INTO gorev_dosyalari (gorev_id, kullanici_id, tur, baslik, dosya_yolu, harici_url, dosya_boyutu, mime_tipi, olusturma_tarihi)
+            VALUES (?, ?, 'dosya', ?, ?, NULL, ?, ?, ?)
         ");
-        $ekle->execute(array($gorev_id, $kullanici_id, $baslik, $guvenli_dosya_adi, $gercek_boyut, $mime_tipi));
+        $ekle->execute(array($gorev_id, $kullanici_id, $baslik, $guvenli_dosya_adi, $gercek_boyut, $mime_tipi, istanbul_simdi()));
 
         aktivite_kaydet($pdo, (int) $gorev['proje_id'], $kullanici_id, $kullanici['ad_soyad'] . ', "' . $gorev['baslik'] . '" görevine belge yükledi: ' . $baslik);
         if (!empty($gorev['atanan_id'])) {
@@ -385,10 +386,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $ekle = $pdo->prepare("
-            INSERT INTO gorev_dosyalari (gorev_id, kullanici_id, tur, baslik, dosya_yolu, harici_url, dosya_boyutu, mime_tipi)
-            VALUES (?, ?, 'link', ?, NULL, ?, 0, NULL)
+            INSERT INTO gorev_dosyalari (gorev_id, kullanici_id, tur, baslik, dosya_yolu, harici_url, dosya_boyutu, mime_tipi, olusturma_tarihi)
+            VALUES (?, ?, 'link', ?, NULL, ?, 0, NULL, ?)
         ");
-        $ekle->execute(array($gorev_id, $kullanici_id, $baslik, $harici_url));
+        $ekle->execute(array($gorev_id, $kullanici_id, $baslik, $harici_url, istanbul_simdi()));
 
         aktivite_kaydet($pdo, (int) $gorev['proje_id'], $kullanici_id, $kullanici['ad_soyad'] . ', "' . $gorev['baslik'] . '" görevine bağlantı ekledi: ' . $baslik);
         if (!empty($gorev['atanan_id'])) {
@@ -520,7 +521,7 @@ $proje_uyeleri = $stmt->fetchAll();
 
 $durum = durum_etiketi($gorev['durum']);
 $oncelik = oncelik_etiketi($gorev['oncelik']);
-$gorev_birim_kodu = isset($gorev['birim']) ? $gorev['birim'] : 'genel';
+$gorev_birim_kodu = birim_kodu_normalize(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
 $birim_bilgi = birim_etiketi($gorev_birim_kodu);
 $sayfa_basligi = '#' . $gorev['id'] . ' ' . $gorev['baslik'];
 $aktif_sayfa = 'gorevler';

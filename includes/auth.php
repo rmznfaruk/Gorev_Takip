@@ -58,7 +58,7 @@ function hatirla_tablosu_hazirla(PDO $pdo)
                     secici TEXT NOT NULL UNIQUE,
                     dogrulayici_hash TEXT NOT NULL,
                     son_gecerlilik TEXT NOT NULL,
-                    olusturma_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    olusturma_tarihi TEXT NOT NULL DEFAULT (datetime('now', '+3 hours')),
                     FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id) ON DELETE CASCADE ON UPDATE CASCADE
                 );
             ");
@@ -96,17 +96,18 @@ function hatirla_token_olustur(PDO $pdo, $kullanici_id)
         $dogrulayici = bin2hex(random_bytes(24));
         $hash = hash('sha256', $dogrulayici);
         $son_ts = time() + HATIRLA_SURE_SANIYE;
-        $son_tarih = date('Y-m-d H:i:s', $son_ts);
+        $simdi_tarih = istanbul_simdi();
+        $son_tarih = istanbul_simdi(HATIRLA_SURE_SANIYE);
 
         // Suresi dolmus eski tokenlari temizle
         $temizle = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE son_gecerlilik < ?');
-        $temizle->execute(array(date('Y-m-d H:i:s')));
+        $temizle->execute(array($simdi_tarih));
 
         $ekle = $pdo->prepare('
-            INSERT INTO hatirla_tokenlari (kullanici_id, secici, dogrulayici_hash, son_gecerlilik)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO hatirla_tokenlari (kullanici_id, secici, dogrulayici_hash, son_gecerlilik, olusturma_tarihi)
+            VALUES (?, ?, ?, ?, ?)
         ');
-        $ekle->execute(array($kid, $secici, $hash, $son_tarih));
+        $ekle->execute(array($kid, $secici, $hash, $son_tarih, $simdi_tarih));
         hatirla_cerez_ayarla($secici . ':' . $dogrulayici, $son_ts);
         return true;
     } catch (Exception $e) {
@@ -188,7 +189,7 @@ function hatirla_oturum_geri_yukle(PDO $pdo)
         $stmt->execute(array($secici));
         $kayit = $stmt->fetch();
 
-        if (!$kayit || $kayit['son_gecerlilik'] < date('Y-m-d H:i:s')) {
+        if (!$kayit || $kayit['son_gecerlilik'] < istanbul_simdi()) {
             if ($kayit) {
                 $sil = $pdo->prepare('DELETE FROM hatirla_tokenlari WHERE id = ?');
                 $sil->execute(array((int) $kayit['token_id']));

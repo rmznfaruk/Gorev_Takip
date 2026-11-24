@@ -39,8 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mevcut_uye = $pdo->prepare('SELECT id FROM proje_uyeleri WHERE proje_id = ? AND kullanici_id = ? LIMIT 1');
         $mevcut_uye->execute(array($oda_id, $kullanici_id));
         if (!$mevcut_uye->fetch()) {
-            $ekle_uye = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki) VALUES (?, ?, ?, ?)');
-            $ekle_uye->execute(array($oda_id, $kullanici_id, 'Ekip Üyesi', 'uye'));
+            $ekle_uye = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki, katilim_tarihi) VALUES (?, ?, ?, ?, ?)');
+            $ekle_uye->execute(array($oda_id, $kullanici_id, 'Ekip Üyesi', 'uye', istanbul_simdi()));
             aktivite_kaydet($pdo, $oda_id, $kullanici_id, $kullanici['ad_soyad'] . ' davet koduyla odaya katıldı.');
             bildirim_ekle($pdo, (int) $oda['yonetici_id'], 'oda_katilim', $kullanici['ad_soyad'] . ', "' . $oda['ad'] . '" odasına katıldı.', 'proje_detay.php?id=' . $oda_id);
             flash_ekle('success', '"' . $oda['ad'] . '" grubuna katıldınız.');
@@ -81,15 +81,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $davet_kodu = oda_kodu_uret($pdo);
 
+        $simdi = istanbul_simdi();
         $ekle = $pdo->prepare('
-            INSERT INTO projeler (ad, kod, davet_kodu, aciklama, yonetici_id, durum, baslangic_tarihi, bitis_tarihi)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO projeler (ad, kod, davet_kodu, aciklama, yonetici_id, durum, baslangic_tarihi, bitis_tarihi, olusturma_tarihi)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
-        $ekle->execute(array($ad, $kod, $davet_kodu, $aciklama, $kullanici_id, $durum, $baslangic, $bitis));
+        $ekle->execute(array($ad, $kod, $davet_kodu, $aciklama, $kullanici_id, $durum, $baslangic, $bitis, $simdi));
         $yeni_proje_id = (int) $pdo->lastInsertId();
 
-        $uye_ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki) VALUES (?, ?, ?, ?)');
-        $uye_ekle->execute(array($yeni_proje_id, $kullanici_id, 'Ekip Lideri', 'lider'));
+        $uye_ekle = $pdo->prepare('INSERT INTO proje_uyeleri (proje_id, kullanici_id, proje_rolu, yetki, katilim_tarihi) VALUES (?, ?, ?, ?, ?)');
+        $uye_ekle->execute(array($yeni_proje_id, $kullanici_id, 'Ekip Lideri', 'lider', $simdi));
 
         aktivite_kaydet($pdo, $yeni_proje_id, $kullanici_id, $kullanici['ad_soyad'] . ' çalışma odasını oluşturdu.');
 
@@ -373,9 +374,9 @@ require_once __DIR__ . '/includes/header.php';
             <article class="room-card"
                      data-filter-item
                      data-status="<?php echo e($proje['durum']); ?>"
-                     data-search-text="<?php echo e($proje['kod'] . ' ' . $proje['davet_kodu'] . ' ' . $proje['ad'] . ' ' . $proje['aciklama']); ?>">
+                     data-search-text="<?php echo e($proje['kod'] . ' ' . $proje['davet_kodu'] . ' ' . $proje['ad'] . ' ' . (string) $proje['aciklama']); ?>">
                 <div class="room-card-top">
-                    <div style="display:flex;align-items:center;gap:0.7rem;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:0.7rem;min-width:0;flex:1;">
                         <span class="room-card-icon" aria-hidden="true"><?php echo e(bas_harfler($proje['ad'])); ?></span>
                         <div style="min-width:0;">
                             <h2 class="section-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -391,7 +392,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <p class="text-muted" style="font-size:0.84rem;margin:0;">
-                    <?php echo e($proje['aciklama'] !== '' ? metin_kisalt($proje['aciklama'], 110) : 'Açıklama eklenmemiş.'); ?>
+                    <?php echo !empty($proje['aciklama']) && trim((string) $proje['aciklama']) !== '' ? e(metin_kisalt($proje['aciklama'], 110)) : 'Açıklama eklenmemiş.'; ?>
                 </p>
 
                 <div class="room-card-stats">
@@ -415,7 +416,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
                     <span class="room-code-chip">
                         <span class="code-chip"><?php echo e($proje['davet_kodu']); ?></span>
                         <button type="button"
@@ -520,23 +521,23 @@ require_once __DIR__ . '/includes/header.php';
                     <?php foreach ($takim_uyeleri as $tu): ?>
                         <?php $oran = (int) $tu['tamamlanma_orani']; ?>
                         <tr>
-                            <td>
+                            <td data-label="Üye">
                                 <span class="assignee-cell">
                                     <span class="avatar avatar-sm"><?php echo e(bas_harfler($tu['ad_soyad'])); ?></span>
                                     <strong><?php echo e($tu['ad_soyad']); ?></strong>
                                 </span>
                             </td>
-                            <td class="text-muted"><?php echo e($tu['unvan']); ?></td>
-                            <td>
+                            <td data-label="Unvan" class="text-muted"><?php echo e($tu['unvan']); ?></td>
+                            <td data-label="Dahil Olduğu Odalar">
                                 <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
                                     <?php foreach ($tu['odalar'] as $oda_kod): ?>
                                         <span class="code-chip"><?php echo e($oda_kod); ?></span>
                                     <?php endforeach; ?>
                                 </div>
                             </td>
-                            <td class="mono"><?php echo (int) $tu['aktif_gorev']; ?> aktif / <?php echo (int) $tu['toplam_gorev']; ?> toplam</td>
-                            <td>
-                                <div class="inline-progress" style="min-width:120px;">
+                            <td data-label="Aktif Görev" class="mono"><?php echo (int) $tu['aktif_gorev']; ?> aktif / <?php echo (int) $tu['toplam_gorev']; ?> toplam</td>
+                            <td data-label="Tamamlanma Oranı">
+                                <div class="inline-progress inline-progress-wide">
                                     <div class="inline-progress-bar">
                                         <div class="inline-progress-fill<?php echo $oran >= 100 ? ' is-complete' : ''; ?>" style="width: <?php echo $oran; ?>%;"></div>
                                     </div>
