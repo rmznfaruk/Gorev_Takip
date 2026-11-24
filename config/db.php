@@ -313,27 +313,21 @@ if (!function_exists('db_mysql_baslat')) {
                             'aktiviteler' => array('olusturma_tarihi'),
                             'hatirla_tokenlari' => array('olusturma_tarihi', 'son_gecerlilik'),
                         );
+                        $kayma_int = (int) $kayma_sn;
                         foreach ($kaydirma_listesi as $tablo => $sutunlar) {
                             if (!db_mysql_tablo_var_mi($pdo, $tablo)) {
                                 continue;
                             }
                             if ($tablo === 'gorevler') {
-                                $g_stmt = $pdo->prepare('
-                                    UPDATE gorevler
-                                    SET olusturma_tarihi = DATE_ADD(olusturma_tarihi, INTERVAL ? SECOND),
-                                        guncelleme_tarihi = DATE_ADD(guncelleme_tarihi, INTERVAL ? SECOND)
-                                ');
-                                $g_stmt->bindValue(1, (int) $kayma_sn, PDO::PARAM_INT);
-                                $g_stmt->bindValue(2, (int) $kayma_sn, PDO::PARAM_INT);
-                                $g_stmt->execute();
+                                $pdo->exec(
+                                    'UPDATE gorevler SET olusturma_tarihi = DATE_ADD(olusturma_tarihi, INTERVAL ' . $kayma_int . ' SECOND), guncelleme_tarihi = DATE_ADD(guncelleme_tarihi, INTERVAL ' . $kayma_int . ' SECOND)'
+                                );
                                 continue;
                             }
                             foreach ($sutunlar as $sutun) {
-                                $u_stmt = $pdo->prepare(
-                                    "UPDATE {$tablo} SET {$sutun} = DATE_ADD({$sutun}, INTERVAL ? SECOND) WHERE {$sutun} IS NOT NULL"
+                                $pdo->exec(
+                                    "UPDATE {$tablo} SET {$sutun} = DATE_ADD({$sutun}, INTERVAL {$kayma_int} SECOND) WHERE {$sutun} IS NOT NULL"
                                 );
-                                $u_stmt->bindValue(1, (int) $kayma_sn, PDO::PARAM_INT);
-                                $u_stmt->execute();
                             }
                         }
                     }
@@ -364,7 +358,11 @@ if (!function_exists('db_mysql_baslat')) {
         }
 
         // InfinityFree MySQL'de named 'Europe/Istanbul' tablosu olmayabilecegi icin sayisal '+03:00' kullanilir
-        $pdo->exec("SET time_zone = '+03:00'");
+        try {
+            $pdo->exec("SET time_zone = '+03:00'");
+        } catch (PDOException $e) {
+            // Sunucu izin vermezse PHP tarafinda istanbul_simdi() zaten UTC+3 yazar
+        }
     }
 }
 
@@ -402,12 +400,18 @@ if (!function_exists('db_baglan')) {
 
             $dsn = 'mysql:host=' . $host . ';dbname=' . $db_adi . ';charset=utf8mb4';
             $baglanti = new PDO($dsn, $kullanici, $sifre, $secenekler);
-            db_mysql_baslat($baglanti);
-            return $baglanti;
         } catch (PDOException $e) {
             http_response_code(500);
             exit('Veritabanı bağlantısı kurulamadı. Lütfen yapılandırma ayarlarını kontrol edin.');
         }
+
+        try {
+            db_mysql_baslat($baglanti);
+        } catch (Exception $e) {
+            // Baglanti basariliysa migrasyon hatasi siteyi tamamen kapatmasin
+        }
+
+        return $baglanti;
     }
 }
 
