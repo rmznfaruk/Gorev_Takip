@@ -75,12 +75,11 @@ if (!proje_erisim_var_mi($pdo, $proje_id, $kullanici)) {
 
 $kullanici_id = (int) $kullanici['id'];
 $proje_ref = array('id' => $proje_id, 'yonetici_id' => $gorev['yonetici_id']);
-$yetkili = proje_lider_yetkisi_var_mi($pdo, $proje_ref, $kullanici)
-    || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
+$yetkili = gorev_durum_degistirebilir_mi($proje_ref, $gorev, $kullanici);
 
 if (!$yetkili) {
     http_response_code(403);
-    echo json_encode(array('basarili' => false, 'mesaj' => 'Bu görevin durumunu değiştirme yetkiniz yok.'));
+    echo json_encode(array('basarili' => false, 'mesaj' => 'Bu görevin durumunu yalnızca görevin atandığı üye veya ekip lideri değiştirebilir.'));
     exit;
 }
 

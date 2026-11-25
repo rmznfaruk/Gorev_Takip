@@ -55,7 +55,7 @@ require __DIR__ . '/includes/header.php';
                             <span class="priority-dot" aria-hidden="true"></span>
                             <span>Yüksek</span>
                         </span>
-                        <span class="avatar-xs" title="Elif Yılmaz">EY</span>
+                        <?php echo kullanici_avatar_html('Elif Yılmaz', 'avatar-xs'); ?>
                     </div>
                 </div>
                 <div class="preview-card">
@@ -65,7 +65,7 @@ require __DIR__ . '/includes/header.php';
                             <span class="priority-dot" aria-hidden="true"></span>
                             <span>Orta</span>
                         </span>
-                        <span class="avatar-xs" title="Mert Demir">MD</span>
+                        <?php echo kullanici_avatar_html('Mert Demir', 'avatar-xs'); ?>
                     </div>
                 </div>
             </div>
@@ -85,7 +85,7 @@ require __DIR__ . '/includes/header.php';
                             <span class="priority-dot" aria-hidden="true"></span>
                             <span>Yüksek</span>
                         </span>
-                        <span class="avatar-xs" title="Zeynep Kaya">ZK</span>
+                        <?php echo kullanici_avatar_html('Zeynep Kaya', 'avatar-xs'); ?>
                     </div>
                 </div>
             </div>
@@ -105,7 +105,7 @@ require __DIR__ . '/includes/header.php';
                             <span class="priority-dot" aria-hidden="true"></span>
                             <span>Tamam</span>
                         </span>
-                        <span class="avatar-xs" title="Deniz Kaya">DK</span>
+                        <?php echo kullanici_avatar_html('Deniz Kaya', 'avatar-xs'); ?>
                     </div>
                 </div>
             </div>

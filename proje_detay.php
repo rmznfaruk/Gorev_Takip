@@ -364,7 +364,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="page-actions">
         <div class="avatar-stack no-print" title="<?php echo count($uyeler); ?> oda üyesi">
             <?php foreach (array_slice($uyeler, 0, 5) as $av_uye): ?>
-                <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($av_uye['ad_soyad'])); ?>" title="<?php echo e($av_uye['ad_soyad']); ?>"><?php echo e(bas_harfler($av_uye['ad_soyad'])); ?></span>
+                <?php echo kullanici_avatar_html($av_uye['ad_soyad'], 'avatar-sm'); ?>
             <?php endforeach; ?>
         </div>
         <button type="button" class="btn btn-secondary btn-sm" data-print-report>PDF Rapor Al</button>
@@ -472,7 +472,7 @@ require_once __DIR__ . '/includes/header.php';
                         $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
                         $gorev_birim_kodu = $birim_bilgi['kod'];
                         $durum_sinifi = 'status-' . $gorev['durum'];
-                        $durum_degistirebilir = $proje_lider_yetkisi || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
+                        $durum_degistirebilir = gorev_durum_degistirebilir_mi($proje, $gorev, $kullanici);
                         $g_alt_toplam = (int) $gorev['alt_toplam'];
                         $g_alt_biten = (int) $gorev['alt_tamamlanan'];
                         $g_ilerleme = (int) $gorev['ilerleme'];
@@ -503,7 +503,7 @@ require_once __DIR__ . '/includes/header.php';
                             <div class="task-card-meta">
                                 <?php if ($gorev['atanan_adi']): ?>
                                     <span class="assignee-cell">
-                                        <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                        <?php echo kullanici_avatar_html($gorev['atanan_adi'], 'avatar-xs'); ?>
                                         <span><?php echo e($gorev['atanan_adi']); ?></span>
                                     </span>
                                 <?php else: ?>
@@ -569,7 +569,7 @@ require_once __DIR__ . '/includes/header.php';
                             $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
                             $gorev_birim_kodu = $birim_bilgi['kod'];
                             $durum_sinifi = 'status-' . $gorev['durum'];
-                            $durum_degistirebilir = $proje_lider_yetkisi || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
+                            $durum_degistirebilir = gorev_durum_degistirebilir_mi($proje, $gorev, $kullanici);
                             $g_ilerleme = (int) $gorev['ilerleme'];
                             ?>
                             <tr data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>">
@@ -602,7 +602,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <td data-label="Atanan">
                                     <?php if ($gorev['atanan_adi']): ?>
                                         <span class="assignee-cell">
-                                            <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                            <?php echo kullanici_avatar_html($gorev['atanan_adi'], 'avatar-xs'); ?>
                                             <span><?php echo e($gorev['atanan_adi']); ?></span>
                                         </span>
                                     <?php else: ?>
@@ -668,7 +668,7 @@ require_once __DIR__ . '/includes/header.php';
                         <tr>
                             <td data-label="Üye">
                                 <span class="assignee-cell">
-                                    <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($uye['ad_soyad'])); ?>"><?php echo e(bas_harfler($uye['ad_soyad'])); ?></span>
+                                    <?php echo kullanici_avatar_html($uye['ad_soyad'], 'avatar-sm'); ?>
                                     <strong><?php echo e($uye['ad_soyad']); ?></strong>
                                 </span>
                             </td>

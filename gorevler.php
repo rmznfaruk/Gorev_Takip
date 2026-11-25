@@ -185,8 +185,7 @@ require_once __DIR__ . '/includes/header.php';
                         $birim_bilgi = birim_etiketi(isset($gorev['birim']) ? $gorev['birim'] : 'genel');
                         $gorev_birim_kodu = $birim_bilgi['kod'];
                         $durum_sinifi = 'status-' . $gorev['durum'];
-                        $degistirebilir = proje_yonetebilir_mi(array('yonetici_id' => $gorev['proje_yonetici_id']), $kullanici)
-                            || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
+                        $degistirebilir = gorev_durum_degistirebilir_mi(array('yonetici_id' => $gorev['proje_yonetici_id']), $gorev, $kullanici);
                         ?>
                         <tr data-filter-item
                             data-status="<?php echo e($gorev['durum']); ?>"
@@ -209,8 +208,8 @@ require_once __DIR__ . '/includes/header.php';
                             </td>
                             <td data-label="Atanan">
                                 <?php if ($gorev['atanan_adi']): ?>
-                                    <span class="assignee-cell">
-                                        <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                    <span class="assignee-cell" title="<?php echo e($gorev['atanan_adi']); ?>">
+                                        <?php echo kullanici_avatar_html($gorev['atanan_adi'], 'avatar-xs'); ?>
                                         <span><?php echo e($gorev['atanan_adi']); ?></span>
                                     </span>
                                 <?php else: ?>

@@ -801,8 +801,14 @@
         item.setAttribute('data-comment-item', String(yorum.id));
 
         var avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        avatar.textContent = yorum.bas_harfler || 'KU';
+        avatar.className = 'avatar' + (yorum.avatar_sinif ? ' ' + yorum.avatar_sinif : '');
+        if (yorum.avatar_svg && String(yorum.avatar_svg).indexOf('<svg class="stickman-pp"') === 0) {
+            // Sunucunun sabit sablonlardan urettigi cop adam SVG'si (kullanici girdisi icermez)
+            avatar.innerHTML = yorum.avatar_svg;
+            avatar.title = yorum.ad_soyad || '';
+        } else {
+            avatar.textContent = yorum.bas_harfler || 'KU';
+        }
 
         var body = document.createElement('div');
         body.className = 'comment-body';
@@ -1602,6 +1608,10 @@
         cb.checked = Number(item.tamamlandi) === 1;
         cb.setAttribute('data-subtask-toggle', String(item.id));
         cb.setAttribute('data-csrf', csrf);
+        if (item.degistirebilir_mi === false) {
+            cb.disabled = true;
+            cb.title = 'Yalnızca atanan kişi veya ekip lideri işaretleyebilir';
+        }
 
         var title = document.createElement('span');
         title.className = 'subtask-title';
@@ -1620,8 +1630,12 @@
             assignee.title = atananAd;
 
             var av = document.createElement('span');
-            av.className = 'avatar-xs';
-            av.textContent = item.atanan_bas_harfler || item.atanan_bas_harf || atananAd.slice(0, 2).toUpperCase();
+            av.className = 'avatar-xs' + (item.atanan_avatar_sinif ? ' ' + item.atanan_avatar_sinif : '');
+            if (item.atanan_avatar_svg && String(item.atanan_avatar_svg).indexOf('<svg class="stickman-pp"') === 0) {
+                av.innerHTML = item.atanan_avatar_svg;
+            } else {
+                av.textContent = item.atanan_bas_harfler || item.atanan_bas_harf || atananAd.slice(0, 2).toUpperCase();
+            }
 
             var nm = document.createElement('span');
             nm.textContent = atananAd;

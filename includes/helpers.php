@@ -174,6 +174,140 @@ function avatar_renk_sinifi($metin)
     return 'avatar-tone-' . $ton;
 }
 
+function stickman_avatar_indeks($anahtar)
+{
+    $temiz = trim((string) $anahtar);
+    if ($temiz === '') {
+        return 0;
+    }
+    $kucuk = function_exists('mb_strtolower')
+        ? mb_strtolower($temiz, 'UTF-8')
+        : strtolower($temiz);
+    $hash = (int) sprintf('%u', crc32('stickman-pp-v1:' . $kucuk));
+    return $hash % 10;
+}
+
+function stickman_avatar_svg($anahtar)
+{
+    $idx = stickman_avatar_indeks($anahtar);
+    $govde = '<path d="M16 20v2.3M9 28.4c1.5-4 4.1-5.8 7-5.8s5.5 1.8 7 5.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+    $kafa = '<circle cx="16" cy="13.8" r="6.1" fill="#FFFFFF" fill-opacity="0.88" stroke="currentColor" stroke-width="1.95"/>';
+
+    $varyantlar = array(
+        // 1. Kulaklikli yazilimci cop adam
+        $govde
+        . '<path d="M9.1 13.4a6.9 6.9 0 0 1 13.8 0" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>'
+        . $kafa
+        . '<rect x="6.7" y="11.2" width="2.8" height="5.2" rx="1.3" fill="currentColor"/>'
+        . '<rect x="22.5" y="11.2" width="2.8" height="5.2" rx="1.3" fill="currentColor"/>'
+        . '<circle cx="13.8" cy="13.5" r="0.95" fill="currentColor"/>'
+        . '<circle cx="18.2" cy="13.5" r="0.95" fill="currentColor"/>'
+        . '<path d="M13.8 16.4q2.2 1.8 4.4 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>'
+        . '<path d="M9.2 15.8q1.8 1.9 3.9 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
+
+        // 2. Aviyonik / pilot gozluklu cop adam
+        $govde
+        . $kafa
+        . '<path d="M11.8 7.9q4.2-1.8 8.4 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+        . '<path d="M10.7 12.1h4.5l-.5 2.8q-1.9.9-3.6-.5z" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>'
+        . '<path d="M16.8 12.1h4.5l-.4 2.3q-1.7 1.4-3.6.5z" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>'
+        . '<line x1="15.2" y1="12.5" x2="16.8" y2="12.5" stroke="currentColor" stroke-width="1.5"/>'
+        . '<path d="M14.1 17.1q2.1 1.3 4.1-.2" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>',
+
+        // 3. Yuvarlak gozluklu muhendis cop adam
+        $govde
+        . $kafa
+        . '<path d="M13.2 7.5q2.8-2 5.8-.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>'
+        . '<circle cx="13.5" cy="13.5" r="2.05" fill="#FFFFFF" stroke="currentColor" stroke-width="1.55"/>'
+        . '<circle cx="18.5" cy="13.5" r="2.05" fill="#FFFFFF" stroke="currentColor" stroke-width="1.55"/>'
+        . '<line x1="15.55" y1="13.5" x2="16.45" y2="13.5" stroke="currentColor" stroke-width="1.5"/>'
+        . '<circle cx="13.5" cy="13.5" r="0.65" fill="currentColor"/>'
+        . '<circle cx="18.5" cy="13.5" r="0.65" fill="currentColor"/>'
+        . '<path d="M14.1 17q1.9 1.4 3.8 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+
+        // 4. Kepli / sapkali cop adam
+        $govde
+        . $kafa
+        . '<path d="M9.9 11.1c.4-4.1 3-5.8 6.1-5.8 3.1 0 5.6 1.7 6.1 5.8z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>'
+        . '<path d="M9.4 11.1h15.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+        . '<circle cx="16" cy="4.9" r="0.95" fill="currentColor"/>'
+        . '<circle cx="13.9" cy="14" r="0.95" fill="currentColor"/>'
+        . '<circle cx="18.1" cy="14" r="0.95" fill="currentColor"/>'
+        . '<path d="M13.9 16.8q2.1 1.6 4.2 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>',
+
+        // 5. Diken sacli enerjik cop adam
+        $govde
+        . $kafa
+        . '<polyline points="11.1,8.9 10.4,5.3 13.6,7.4 16,3.8 18.4,7.4 21.6,5.3 20.9,8.9" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
+        . '<circle cx="13.7" cy="13.5" r="1" fill="currentColor"/>'
+        . '<circle cx="18.3" cy="13.5" r="1" fill="currentColor"/>'
+        . '<path d="M13.4 16.3q2.6 2.5 5.2 0" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/>',
+
+        // 6. Muhendis baretli (mekanik) cop adam
+        $govde
+        . $kafa
+        . '<path d="M9.8 11c.3-4.2 2.9-6 6.2-6s5.9 1.8 6.2 6" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+        . '<line x1="16" y1="4.8" x2="16" y2="9.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+        . '<line x1="8.3" y1="11" x2="23.7" y2="11" stroke="currentColor" stroke-width="2.05" stroke-linecap="round"/>'
+        . '<circle cx="13.8" cy="14" r="0.95" fill="currentColor"/>'
+        . '<circle cx="18.2" cy="14" r="0.95" fill="currentColor"/>'
+        . '<path d="M14 16.9q2 1.4 4 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>',
+
+        // 7. Kucuk yildizli / tacli lider cop adam
+        $govde
+        . $kafa
+        . '<polygon points="11.5,8.3 12.2,4.3 16,6.7 19.8,4.3 20.5,8.3" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"/>'
+        . '<circle cx="16" cy="3.3" r="0.9" fill="currentColor"/>'
+        . '<circle cx="13.8" cy="13.6" r="0.95" fill="currentColor"/>'
+        . '<circle cx="18.2" cy="13.6" r="0.95" fill="currentColor"/>'
+        . '<path d="M13.7 16.5q2.3 1.9 4.6 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+
+        // 8. Kivircik / at kuyruklu cop adam
+        $govde
+        . '<path d="M21.7 10.6c2.9-1.2 4.3 1.7 2.6 4.6-.9 1.5-2.1.6-2.3-1.2" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/>'
+        . $kafa
+        . '<path d="M10.9 10.4q2.5-1.9 5.1-.5q2.6-1.4 5.1.5" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/>'
+        . '<circle cx="13.8" cy="13.6" r="0.95" fill="currentColor"/>'
+        . '<circle cx="18.2" cy="13.6" r="0.95" fill="currentColor"/>'
+        . '<path d="M13.9 16.6q2.1 1.8 4.2 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>',
+
+        // 9. Antenli / vizorlu elektronikci cop adam
+        $govde
+        . '<line x1="16" y1="7.6" x2="16" y2="4.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+        . '<circle cx="16" cy="3.1" r="1.35" fill="currentColor"/>'
+        . $kafa
+        . '<rect x="10.8" y="11.7" width="10.4" height="3.2" rx="1.5" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.55"/>'
+        . '<line x1="12.6" y1="13.3" x2="15" y2="13.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
+        . '<path d="M14.1 17.1q1.9 1.3 3.8 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>',
+
+        // 10. Bandanali / gulumseyen cop adam
+        $govde
+        . '<path d="M21.9 11l3.6-1.6M21.9 11.5l3.8 1.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>'
+        . $kafa
+        . '<path d="M10.1 10.3q5.9-.9 11.8 0M10.2 12.1q5.8-.8 11.6 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>'
+        . '<path d="M12.5 14.3q1.1-1.2 2.2 0M17.3 14.3q1.1-1.2 2.2 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>'
+        . '<path d="M13.6 16.8q2.4 2.1 4.8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    );
+
+    $icerik = isset($varyantlar[$idx]) ? $varyantlar[$idx] : $varyantlar[0];
+    return '<svg class="stickman-pp" data-pp-variant="' . ($idx + 1) . '" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' . $icerik . '</svg>';
+}
+
+function kullanici_avatar_html($ad_soyad, $boyut_sinifi = 'avatar', $ek_sinif = '')
+{
+    $ad = trim((string) $ad_soyad);
+    $etiket = $ad !== '' ? $ad : 'Kullanıcı';
+    $boyut = trim((string) $boyut_sinifi);
+    if ($boyut === '') {
+        $boyut = 'avatar';
+    } elseif ($boyut === 'avatar-sm') {
+        $boyut = 'avatar avatar-sm';
+    }
+    $renk = avatar_renk_sinifi($etiket);
+    $siniflar = trim($boyut . ' ' . $renk . ($ek_sinif !== '' ? ' ' . trim((string) $ek_sinif) : ''));
+    return '<span class="' . e($siniflar) . '" title="' . e($etiket) . '">' . stickman_avatar_svg($etiket) . '</span>';
+}
+
 function oda_renk_sinifi($anahtar)
 {
     $temiz = trim((string) $anahtar);

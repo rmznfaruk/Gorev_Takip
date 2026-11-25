@@ -405,6 +405,74 @@ function proje_kurucu_veya_yonetici_mi($proje, $kullanici)
     return proje_yonetebilir_mi($proje, $kullanici);
 }
 
+/**
+ * Ana gorevin durumunu yalnizca Odanin Ekip Lideri (oda kurucusu / sistem yoneticisi)
+ * veya dogrudan gorevin atandigi uye degistirebilir. Birim lideri baskasinin gorevini bitiremez.
+ */
+function gorev_durum_degistirebilir_mi($proje, $gorev, $kullanici)
+{
+    if (!is_array($gorev) || !is_array($kullanici) || !isset($kullanici['id'])) {
+        return false;
+    }
+    $kullanici_id = (int) $kullanici['id'];
+    if ($kullanici_id <= 0) {
+        return false;
+    }
+    if (proje_yonetebilir_mi($proje, $kullanici)) {
+        return true;
+    }
+    if (isset($gorev['atanan_id']) && $gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] > 0) {
+        return (int) $gorev['atanan_id'] === $kullanici_id;
+    }
+    return false;
+}
+
+/**
+ * Alt gorevin kutucugunu:
+ * - Odanin Ekip Lideri her zaman isaretleyebilir / kaldirabilir.
+ * - Alt gorevin atanan_id'si doluysa YALNIZCA o atanan_id (+ Ekip Lideri) isaretleyebilir.
+ * - Alt gorevin atanan_id'si NULL ise YALNIZCA ana gorevin atanan_id'si (+ Ekip Lideri) isaretleyebilir.
+ * Birim lideri baskasina atanan alt gorevi isaretleyemez.
+ */
+function alt_gorev_durum_degistirebilir_mi($proje, $gorev, $alt_gorev, $kullanici)
+{
+    if (!is_array($alt_gorev) || !is_array($kullanici) || !isset($kullanici['id'])) {
+        return false;
+    }
+    $kullanici_id = (int) $kullanici['id'];
+    if ($kullanici_id <= 0) {
+        return false;
+    }
+    if (proje_yonetebilir_mi($proje, $kullanici)) {
+        return true;
+    }
+
+    $alt_atanan_id = (isset($alt_gorev['atanan_id']) && $alt_gorev['atanan_id'] !== null && (int) $alt_gorev['atanan_id'] > 0)
+        ? (int) $alt_gorev['atanan_id']
+        : null;
+
+    if ($alt_atanan_id !== null) {
+        return $alt_atanan_id === $kullanici_id;
+    }
+
+    $gorev_atanan_id = null;
+    if (is_array($gorev) && array_key_exists('atanan_id', $gorev) && $gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] > 0) {
+        $gorev_atanan_id = (int) $gorev['atanan_id'];
+    } elseif (isset($alt_gorev['gorev_atanan_id']) && $alt_gorev['gorev_atanan_id'] !== null && (int) $alt_gorev['gorev_atanan_id'] > 0) {
+        $gorev_atanan_id = (int) $alt_gorev['gorev_atanan_id'];
+    }
+
+    return $gorev_atanan_id !== null && $gorev_atanan_id === $kullanici_id;
+}
+
+/**
+ * Alt gorevleri ve ana gorevleri yalnizca Odanin Ekip Lideri silebilir.
+ */
+function alt_gorev_silebilir_mi($proje, $kullanici)
+{
+    return proje_yonetebilir_mi($proje, $kullanici);
+}
+
 function proje_lider_yetkisi_var_mi(PDO $pdo, $proje, $kullanici)
 {
     if (!is_array($kullanici) || !isset($kullanici['id'])) {

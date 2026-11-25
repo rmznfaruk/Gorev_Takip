@@ -525,8 +525,8 @@ require_once __DIR__ . '/includes/header.php';
                         <?php $oran = (int) $tu['tamamlanma_orani']; ?>
                         <tr>
                             <td data-label="Üye">
-                                <span class="assignee-cell">
-                                    <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($tu['ad_soyad'])); ?>"><?php echo e(bas_harfler($tu['ad_soyad'])); ?></span>
+                                <span class="assignee-cell" title="<?php echo e($tu['ad_soyad']); ?>">
+                                    <?php echo kullanici_avatar_html($tu['ad_soyad'], 'avatar avatar-sm'); ?>
                                     <strong><?php echo e($tu['ad_soyad']); ?></strong>
                                 </span>
                             </td>

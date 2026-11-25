@@ -41,8 +41,9 @@ $birimler = birim_secenekleri();
 $proje_ref = array('id' => (int) $gorev['proje_id'], 'yonetici_id' => $gorev['proje_yonetici_id']);
 $proje_kurucu_yetkisi = proje_yonetebilir_mi($proje_ref, $kullanici);
 $proje_yonetebilir = proje_lider_yetkisi_var_mi($pdo, $proje_ref, $kullanici);
-$durum_degistirebilir = $proje_yonetebilir
-    || ($gorev['atanan_id'] !== null && (int) $gorev['atanan_id'] === $kullanici_id);
+// Yetki: Gorevi bitirme / kutucuk isaretleme yalnizca Ekip Lideri veya gorevin atandigi kisi.
+// Birim lideri gorev olusturup atayabilir ama baskasinin gorevini tamamlayamaz / silemez.
+$durum_degistirebilir = gorev_durum_degistirebilir_mi($proje_ref, $gorev, $kullanici);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '';
@@ -72,6 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $son_tarih = isset($_POST['son_tarih']) && $_POST['son_tarih'] !== '' ? $_POST['son_tarih'] : null;
 
         if (!in_array($durum, array('yapilacak', 'devam_ediyor', 'tamamlandi'), true)) {
+            $durum = $gorev['durum'];
+        }
+        if (!$durum_degistirebilir) {
+            // Birim lideri duzenleme formundan baskasinin gorevini tamamlandi yapamaz.
             $durum = $gorev['durum'];
         }
         if (!in_array($oncelik, array('dusuk', 'orta', 'yuksek'), true)) {
@@ -108,8 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($islem === 'gorev_sil') {
-        if (!$proje_yonetebilir) {
-            flash_ekle('error', 'Bu görevi silme yetkiniz yok.');
+        if (!$proje_kurucu_yetkisi) {
+            flash_ekle('error', 'Görevleri yalnızca odanın ekip lideri silebilir.');
             yonlendir('gorev_detay.php?id=' . $gorev_id);
         }
 
@@ -209,8 +214,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $alt_stmt->execute(array($alt_id, $gorev_id));
         $alt_kayit = $alt_stmt->fetch();
         if ($alt_kayit) {
-            $alt_yetkili = $durum_degistirebilir || ($alt_kayit['atanan_id'] !== null && (int) $alt_kayit['atanan_id'] === $kullanici_id);
-            if ($alt_yetkili) {
+            $alt_yetkili = alt_gorev_durum_degistirebilir_mi($proje_ref, $gorev, $alt_kayit, $kullanici);
+            if (!$alt_yetkili) {
+                flash_ekle('error', 'Bu alt görevi yalnızca atanan kişi veya ekip lideri işaretleyebilir.');
+            } else {
                 $yeni_tamam = ((int) $alt_kayit['tamamlandi'] === 1) ? 0 : 1;
                 $guncelle = $pdo->prepare('UPDATE alt_gorevler SET tamamlandi = ? WHERE id = ?');
                 $guncelle->execute(array($yeni_tamam, $alt_id));
@@ -222,8 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($islem === 'alt_gorev_sil') {
-        if (!$proje_yonetebilir) {
-            flash_ekle('error', 'Alt görev silme yetkiniz yok.');
+        if (!$proje_kurucu_yetkisi) {
+            flash_ekle('error', 'Alt görevleri yalnızca odanın ekip lideri silebilir.');
             yonlendir('gorev_detay.php?id=' . $gorev_id);
         }
         $alt_id = isset($_POST['alt_gorev_id']) ? (int) $_POST['alt_gorev_id'] : 0;
@@ -546,11 +553,13 @@ require_once __DIR__ . '/includes/header.php';
     <?php if ($proje_yonetebilir): ?>
         <div class="page-actions">
             <button type="button" class="btn btn-primary" data-modal-open="modal-gorev-duzenle">Düzenle</button>
+            <?php if ($proje_kurucu_yetkisi): ?>
             <form method="post" action="gorev_detay.php?id=<?php echo $gorev_id; ?>" data-confirm="Bu görevi silmek istediğinize emin misiniz?">
                 <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
                 <input type="hidden" name="islem" value="gorev_sil">
                 <button type="submit" class="btn btn-ghost text-danger">Sil</button>
             </form>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
@@ -611,7 +620,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php foreach ($hafta_ogeleri as $alt): ?>
                                     <?php
                                     $tamam_mi = ((int) $alt['tamamlandi'] === 1);
-                                    $alt_degistirebilir = $durum_degistirebilir || ($alt['atanan_id'] !== null && (int) $alt['atanan_id'] === $kullanici_id);
+                                    $alt_degistirebilir = alt_gorev_durum_degistirebilir_mi($proje_ref, $gorev, $alt, $kullanici);
                                     ?>
                                     <div class="subtask-item<?php echo $tamam_mi ? ' is-done' : ''; ?>" data-subtask-item="<?php echo (int) $alt['id']; ?>">
                                         <label class="subtask-left">
@@ -620,20 +629,20 @@ require_once __DIR__ . '/includes/header.php';
                                                    data-subtask-toggle="<?php echo (int) $alt['id']; ?>"
                                                    data-csrf="<?php echo e($csrf); ?>"
                                                    <?php echo $tamam_mi ? 'checked' : ''; ?>
-                                                   <?php echo $alt_degistirebilir ? '' : 'disabled'; ?>>
+                                                   <?php echo $alt_degistirebilir ? '' : 'disabled title="Yalnızca atanan kişi veya ekip lideri işaretleyebilir"'; ?>>
                                             <span class="subtask-title"><?php echo e($alt['baslik']); ?></span>
                                         </label>
                                         <div class="subtask-right">
                                             <?php if (!empty($alt['atanan_adi'])): ?>
                                                 <span class="assignee-cell" title="<?php echo e($alt['atanan_adi']); ?>">
-                                                    <span class="avatar-xs <?php echo e(avatar_renk_sinifi($alt['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($alt['atanan_adi'])); ?></span>
+                                                    <?php echo kullanici_avatar_html($alt['atanan_adi'], 'avatar-xs'); ?>
                                                     <span><?php echo e($alt['atanan_adi']); ?></span>
                                                 </span>
                                             <?php endif; ?>
                                             <?php if (!empty($alt['son_tarih'])): ?>
                                                 <?php echo son_tarih_aciliyet_html($alt['son_tarih'], $tamam_mi); ?>
                                             <?php endif; ?>
-                                            <?php if ($proje_yonetebilir): ?>
+                                            <?php if ($proje_kurucu_yetkisi): ?>
                                                 <button type="button"
                                                         class="subtask-delete-btn no-print"
                                                         data-subtask-delete="<?php echo (int) $alt['id']; ?>"
@@ -835,7 +844,7 @@ require_once __DIR__ . '/includes/header.php';
                     <?php foreach ($yorumlar as $yorum): ?>
                         <?php $silebilir = ((int) $yorum['kullanici_id'] === $kullanici_id) || $proje_yonetebilir; ?>
                         <div class="comment-item" data-comment-item="<?php echo (int) $yorum['id']; ?>">
-                            <div class="avatar <?php echo e(avatar_renk_sinifi($yorum['ad_soyad'])); ?>"><?php echo e(bas_harfler($yorum['ad_soyad'])); ?></div>
+                            <?php echo kullanici_avatar_html($yorum['ad_soyad'], 'avatar'); ?>
                             <div class="comment-body">
                                 <div class="comment-meta">
                                     <div>
@@ -940,7 +949,7 @@ require_once __DIR__ . '/includes/header.php';
                     <span class="meta-key">Atanan</span>
                     <?php if ($gorev['atanan_adi']): ?>
                         <span class="assignee-cell">
-                            <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                            <?php echo kullanici_avatar_html($gorev['atanan_adi'], 'avatar-xs'); ?>
                             <span><?php echo e($gorev['atanan_adi']); ?></span>
                         </span>
                     <?php else: ?>

@@ -86,7 +86,10 @@ require_once __DIR__ . '/includes/header.php';
 <div class="grid-2">
     <section class="card">
         <div class="section-header">
-            <h2 class="section-title">Hesap Bilgileri</h2>
+            <div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">
+                <?php echo kullanici_avatar_html($kullanici['ad_soyad'], 'avatar'); ?>
+                <h2 class="section-title">Hesap Bilgileri</h2>
+            </div>
             <span class="badge <?php echo $ekip_lideri ? 'badge-yonetici' : 'badge-uye'; ?>">
                 <?php echo $ekip_lideri ? 'Ekip Lideri' : 'Üye'; ?>
             </span>

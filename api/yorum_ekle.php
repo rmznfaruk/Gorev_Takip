@@ -76,7 +76,7 @@ if ($islem === 'sil') {
     }
 
     $proje_ref = array('id' => $proje_id, 'yonetici_id' => $yorum['yonetici_id']);
-    if ((int) $yorum['kullanici_id'] !== $kullanici_id && !proje_lider_yetkisi_var_mi($pdo, $proje_ref, $kullanici)) {
+    if ((int) $yorum['kullanici_id'] !== $kullanici_id && !proje_yonetebilir_mi($proje_ref, $kullanici)) {
         http_response_code(403);
         echo json_encode(array('basarili' => false, 'mesaj' => 'Bu yorumu silme yetkiniz yok.'));
         exit;
@@ -169,6 +169,9 @@ echo json_encode(array(
         'ad_soyad' => $kullanici['ad_soyad'],
         'unvan' => $kullanici['unvan'],
         'bas_harfler' => bas_harfler($kullanici['ad_soyad']),
+        'avatar_sinif' => avatar_renk_sinifi($kullanici['ad_soyad']),
+        'avatar_varyant' => stickman_avatar_indeks($kullanici['ad_soyad']),
+        'avatar_svg' => stickman_avatar_svg($kullanici['ad_soyad']),
         'icerik' => $icerik,
         'tarih' => tarih_format($tarih_ham, true),
         'silebilir_mi' => true,

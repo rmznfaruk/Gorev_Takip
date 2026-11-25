@@ -1737,6 +1737,40 @@ dialog.modal-dialog::backdrop {
     border-color: #99F6E4;
 }
 
+/* Cop adam profil resimleri (kullanici adina gore sabit, 10 varyant) */
+.avatar,
+.avatar-xs {
+    overflow: hidden;
+}
+
+.avatar > .stickman-pp,
+.avatar-xs > .stickman-pp {
+    display: block;
+    width: 88%;
+    height: 88%;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .avatar:hover > .stickman-pp,
+    .avatar-xs:hover > .stickman-pp {
+        animation: stickman-pp-wave 0.6s ease-in-out;
+        transform-origin: 50% 90%;
+    }
+}
+
+@keyframes stickman-pp-wave {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(-8deg); }
+    65% { transform: rotate(6deg); }
+}
+
+.subtask-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 /* Yorumlar */
 .comment-list {
     display: flex;

@@ -174,7 +174,10 @@ require_once __DIR__ . '/includes/header.php';
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Merhaba, <?php echo e($kullanici['ad_soyad']); ?></h1>
+        <h1 class="page-title" style="display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;">
+            <?php echo kullanici_avatar_html($kullanici['ad_soyad'], 'avatar'); ?>
+            <span>Merhaba, <?php echo e($kullanici['ad_soyad']); ?></span>
+        </h1>
         <p class="page-subtitle">
             <span class="badge <?php echo $ekip_lideri ? 'badge-yonetici' : 'badge-uye'; ?>"><?php echo $ekip_lideri ? 'Ekip Lideri' : 'Üye'; ?></span>
             &nbsp;<?php echo e($kullanici['unvan']); ?> &middot; Çalışma odalarınız ve güncel görev özetiniz.

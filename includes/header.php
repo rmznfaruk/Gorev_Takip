@@ -171,7 +171,7 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
                 </a>
 
                 <a href="profil.php" class="user-pill" title="<?php echo e($ust_kullanici['ad_soyad']); ?>">
-                    <span class="avatar avatar-sm<?php echo function_exists('avatar_renk_sinifi') ? ' ' . e(avatar_renk_sinifi($ust_kullanici['ad_soyad'])) : ''; ?>"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
+                    <?php echo kullanici_avatar_html($ust_kullanici['ad_soyad'], 'avatar avatar-sm'); ?>
                     <span class="user-pill-name"><?php echo e($ust_kullanici['ad_soyad']); ?></span>
                 </a>
             <?php else: ?>
@@ -330,7 +330,7 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
     <div class="drawer-footer">
         <?php if ($oturum_acik && $ust_kullanici): ?>
             <div class="drawer-user">
-                <span class="avatar<?php echo function_exists('avatar_renk_sinifi') ? ' ' . e(avatar_renk_sinifi($ust_kullanici['ad_soyad'])) : ''; ?>"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
+                <?php echo kullanici_avatar_html($ust_kullanici['ad_soyad'], 'avatar'); ?>
                 <div class="drawer-user-info">
                     <span class="drawer-user-name"><?php echo e($ust_kullanici['ad_soyad']); ?></span>
                     <span class="drawer-user-role"><?php echo $ust_ekip_lideri ? 'Ekip Lideri' : 'Üye'; ?></span>

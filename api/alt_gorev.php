@@ -78,7 +78,7 @@ if ($islem === 'ekle') {
     }
 
     $stmt = $pdo->prepare('
-        SELECT g.id, g.proje_id, g.baslik, g.durum, p.yonetici_id
+        SELECT g.id, g.proje_id, g.baslik, g.durum, g.atanan_id, p.yonetici_id
         FROM gorevler g
         INNER JOIN projeler p ON p.id = g.proje_id
         WHERE g.id = ?
@@ -153,6 +153,9 @@ if ($islem === 'ekle') {
     );
 
     $ozet = alt_gorev_ilerleme_ozeti($pdo, $gorev_id, $gorev['durum']);
+    $yeni_alt_ref = array('atanan_id' => $atanan_id);
+    $silebilir_mi = alt_gorev_silebilir_mi($proje_ref, $kullanici);
+    $degistirebilir_mi = alt_gorev_durum_degistirebilir_mi($proje_ref, $gorev, $yeni_alt_ref, $kullanici);
 
     http_response_code(201);
     echo json_encode(array(
@@ -166,12 +169,15 @@ if ($islem === 'ekle') {
             'atanan_id' => $atanan_id,
             'atanan_adi' => $atanan_adi,
             'atanan_bas_harfler' => $atanan_adi ? bas_harfler($atanan_adi) : null,
+            'atanan_avatar_sinif' => $atanan_adi ? avatar_renk_sinifi($atanan_adi) : null,
+            'atanan_avatar_varyant' => $atanan_adi ? stickman_avatar_indeks($atanan_adi) : null,
+            'atanan_avatar_svg' => $atanan_adi ? stickman_avatar_svg($atanan_adi) : null,
             'son_tarih' => $son_tarih,
             'son_tarih_format' => $son_tarih ? tarih_format($son_tarih) : '-',
             'tamamlandi' => 0,
             'sira' => $yeni_sira,
-            'silebilir_mi' => true,
-            'degistirebilir_mi' => true,
+            'silebilir_mi' => $silebilir_mi,
+            'degistirebilir_mi' => $degistirebilir_mi,
         ),
         'alt_toplam' => $ozet['alt_toplam'],
         'alt_tamamlanan' => $ozet['alt_tamamlanan'],
@@ -218,13 +224,12 @@ if ($islem === 'durum') {
     }
 
     $proje_ref = array('id' => $proje_id, 'yonetici_id' => $alt['yonetici_id']);
-    $yetkili = proje_lider_yetkisi_var_mi($pdo, $proje_ref, $kullanici)
-        || ($alt['atanan_id'] !== null && (int) $alt['atanan_id'] === $kullanici_id)
-        || ($alt['gorev_atanan_id'] !== null && (int) $alt['gorev_atanan_id'] === $kullanici_id);
+    $gorev_ref = array('atanan_id' => $alt['gorev_atanan_id']);
+    $yetkili = alt_gorev_durum_degistirebilir_mi($proje_ref, $gorev_ref, $alt, $kullanici);
 
     if (!$yetkili) {
         http_response_code(403);
-        echo json_encode(array('basarili' => false, 'mesaj' => 'Bu alt görevin durumunu değiştirme yetkiniz yok.'));
+        echo json_encode(array('basarili' => false, 'mesaj' => 'Bu alt görevin durumunu yalnızca atanan kişi veya ekip lideri değiştirebilir.'));
         exit;
     }
 
@@ -305,9 +310,9 @@ if ($islem === 'sil') {
     }
 
     $proje_ref = array('id' => $proje_id, 'yonetici_id' => $alt['yonetici_id']);
-    if (!proje_lider_yetkisi_var_mi($pdo, $proje_ref, $kullanici)) {
+    if (!alt_gorev_silebilir_mi($proje_ref, $kullanici)) {
         http_response_code(403);
-        echo json_encode(array('basarili' => false, 'mesaj' => 'Alt görev silme yetkiniz yok.'));
+        echo json_encode(array('basarili' => false, 'mesaj' => 'Alt görevleri yalnızca odanın ekip lideri silebilir.'));
         exit;
     }
 
