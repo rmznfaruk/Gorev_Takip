@@ -218,6 +218,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <?php if (empty($projeler)): ?>
                 <div class="card empty-state">
+                    <?php echo bos_durum_gorseli('oda'); ?>
                     <div class="empty-state-title">Henüz bir çalışma odanız yok</div>
                     <p>Yeni bir oda oluşturabilir veya ekip arkadaşınızdan aldığınız davet koduyla hemen katılabilirsiniz.</p>
                     <div style="margin-top:0.85rem;">
@@ -279,6 +280,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <?php if (empty($aktif_gorevler)): ?>
                 <div class="empty-state">
+                    <?php echo bos_durum_gorseli('gorev'); ?>
                     <div class="empty-state-title">Üzerinizde açık görev yok</div>
                     <p>Yeni bir görev atandığında burada ilerleme çubuğuyla birlikte görünecektir.</p>
                 </div>
@@ -309,7 +311,7 @@ require_once __DIR__ . '/includes/header.php';
                                         </a>
                                     </td>
                                     <td data-label="Birim">
-                                        <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
+                                        <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
                                     </td>
                                     <td data-label="İlerleme">
                                         <div class="inline-progress">
@@ -390,6 +392,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <?php if (empty($yaklasan_gorevler)): ?>
                 <div class="empty-state" style="padding:1.5rem 1rem;">
+                    <?php echo bos_durum_gorseli('takvim'); ?>
                     <p>Yaklaşan veya geciken teslim tarihi bulunmuyor.</p>
                 </div>
             <?php else: ?>

@@ -364,7 +364,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="page-actions">
         <div class="avatar-stack no-print" title="<?php echo count($uyeler); ?> oda üyesi">
             <?php foreach (array_slice($uyeler, 0, 5) as $av_uye): ?>
-                <span class="avatar avatar-sm" title="<?php echo e($av_uye['ad_soyad']); ?>"><?php echo e(bas_harfler($av_uye['ad_soyad'])); ?></span>
+                <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($av_uye['ad_soyad'])); ?>" title="<?php echo e($av_uye['ad_soyad']); ?>"><?php echo e(bas_harfler($av_uye['ad_soyad'])); ?></span>
             <?php endforeach; ?>
         </div>
         <button type="button" class="btn btn-secondary btn-sm" data-print-report>PDF Rapor Al</button>
@@ -480,7 +480,7 @@ require_once __DIR__ . '/includes/header.php';
                         <article class="task-card" data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>">
                             <div class="task-card-top">
                                 <span class="code-chip"><?php echo e($proje['kod']); ?> #<?php echo (int) $gorev['id']; ?></span>
-                                <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
+                                <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
                                 <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
                                     <span class="priority-dot" aria-hidden="true"></span>
                                     <span><?php echo e($oncelik['metin']); ?></span>
@@ -503,7 +503,7 @@ require_once __DIR__ . '/includes/header.php';
                             <div class="task-card-meta">
                                 <?php if ($gorev['atanan_adi']): ?>
                                     <span class="assignee-cell">
-                                        <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                        <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
                                         <span><?php echo e($gorev['atanan_adi']); ?></span>
                                     </span>
                                 <?php else: ?>
@@ -544,6 +544,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="card card-flush">
         <?php if (empty($tum_gorevler)): ?>
             <div class="empty-state">
+                <?php echo bos_durum_gorseli('gorev'); ?>
                 <div class="empty-state-title">Bu odada henüz görev yok</div>
                 <p>İlk ana görevi ekleyip içine Hafta 1, Hafta 2 alt görevleri planlayabilirsiniz.</p>
             </div>
@@ -583,7 +584,7 @@ require_once __DIR__ . '/includes/header.php';
                                         </a>
                                     </div>
                                 </td>
-                                <td data-label="Birim"><span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span></td>
+                                <td data-label="Birim"><span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span></td>
                                 <td data-label="Öncelik">
                                     <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
                                         <span class="priority-dot" aria-hidden="true"></span>
@@ -601,7 +602,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <td data-label="Atanan">
                                     <?php if ($gorev['atanan_adi']): ?>
                                         <span class="assignee-cell">
-                                            <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                            <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
                                             <span><?php echo e($gorev['atanan_adi']); ?></span>
                                         </span>
                                     <?php else: ?>
@@ -667,7 +668,7 @@ require_once __DIR__ . '/includes/header.php';
                         <tr>
                             <td data-label="Üye">
                                 <span class="assignee-cell">
-                                    <span class="avatar avatar-sm"><?php echo e(bas_harfler($uye['ad_soyad'])); ?></span>
+                                    <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($uye['ad_soyad'])); ?>"><?php echo e(bas_harfler($uye['ad_soyad'])); ?></span>
                                     <strong><?php echo e($uye['ad_soyad']); ?></strong>
                                 </span>
                             </td>
@@ -722,6 +723,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
         <?php if (empty($aktiviteler)): ?>
             <div class="empty-state">
+                <?php echo bos_durum_gorseli('aktivite'); ?>
                 <p>Bu odada henüz kaydedilmiş bir aktivite yok.</p>
             </div>
         <?php else: ?>

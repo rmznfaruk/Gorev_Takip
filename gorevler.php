@@ -160,6 +160,7 @@ require_once __DIR__ . '/includes/header.php';
 <section class="card card-flush">
     <?php if (empty($gorevler)): ?>
         <div class="empty-state">
+            <?php echo bos_durum_gorseli('gorev'); ?>
             <p>Seçilen filtrelere uygun görev bulunamadı.</p>
         </div>
     <?php else: ?>
@@ -204,12 +205,12 @@ require_once __DIR__ . '/includes/header.php';
                                 </a>
                             </td>
                             <td data-label="Birim">
-                                <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
+                                <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
                             </td>
                             <td data-label="Atanan">
                                 <?php if ($gorev['atanan_adi']): ?>
                                     <span class="assignee-cell">
-                                        <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                                        <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
                                         <span><?php echo e($gorev['atanan_adi']); ?></span>
                                     </span>
                                 <?php else: ?>
@@ -247,6 +248,7 @@ require_once __DIR__ . '/includes/header.php';
             </table>
         </div>
         <div class="empty-state" data-filter-empty style="display:none;">
+            <?php echo bos_durum_gorseli('gorev'); ?>
             <p>Arama kriterine uyan görev bulunamadı.</p>
         </div>
     <?php endif; ?>

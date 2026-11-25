@@ -356,6 +356,7 @@ require_once __DIR__ . '/includes/header.php';
 
 <?php if (empty($projeler)): ?>
     <div class="card empty-state">
+        <?php echo bos_durum_gorseli('oda'); ?>
         <p>Kriterlere uyan proje bulunamadı.</p>
     </div>
 <?php else: ?>
@@ -497,6 +498,7 @@ require_once __DIR__ . '/includes/header.php';
         <?php endforeach; ?>
     </div>
     <div class="card empty-state" data-filter-empty style="display:none;">
+        <?php echo bos_durum_gorseli('oda'); ?>
         <p>Filtreye uygun oda bulunamadı.</p>
     </div>
 <?php endif; ?>
@@ -523,7 +525,7 @@ require_once __DIR__ . '/includes/header.php';
                         <tr>
                             <td data-label="Üye">
                                 <span class="assignee-cell">
-                                    <span class="avatar avatar-sm"><?php echo e(bas_harfler($tu['ad_soyad'])); ?></span>
+                                    <span class="avatar avatar-sm <?php echo e(avatar_renk_sinifi($tu['ad_soyad'])); ?>"><?php echo e(bas_harfler($tu['ad_soyad'])); ?></span>
                                     <strong><?php echo e($tu['ad_soyad']); ?></strong>
                                 </span>
                             </td>

@@ -19,6 +19,156 @@
 
     var STATUS_CLASSES = ['status-yapilacak', 'status-devam_ediyor', 'status-tamamlandi'];
 
+    var CAT_CELEBRATION_MESSAGES = [
+        'Harika iş! Bir görev daha pençelendi ve çizildi!',
+        'Süper ilerleme! TEKNOFEST yolunda tam gaz devam!',
+        'Görev tamam! Ekip hedeflerine bir adım daha yaklaştı!',
+        'Müthiş! Bu haftanın yükü bir kalemde silindi!',
+        'Eline sağlık! Bir engel daha başarıyla aşıldı!'
+    ];
+    var lastCatMsgIndex = -1;
+    var activeCatTimer = null;
+    var activeCatLeaveTimer = null;
+
+    function pickCatMessage() {
+        if (CAT_CELEBRATION_MESSAGES.length <= 1) {
+            return CAT_CELEBRATION_MESSAGES[0] || '';
+        }
+        var idx = Math.floor(Math.random() * CAT_CELEBRATION_MESSAGES.length);
+        if (idx === lastCatMsgIndex) {
+            idx = (idx + 1) % CAT_CELEBRATION_MESSAGES.length;
+        }
+        lastCatMsgIndex = idx;
+        return CAT_CELEBRATION_MESSAGES[idx];
+    }
+
+    function resolveScribbleHost(targetElement) {
+        if (!targetElement || typeof targetElement.closest !== 'function') {
+            return null;
+        }
+        var subItem = targetElement.closest('.subtask-item');
+        if (subItem) {
+            return subItem.querySelector('.subtask-title') || subItem;
+        }
+        var card = targetElement.closest('.task-card');
+        if (card) {
+            return card.querySelector('.task-card-title') || card;
+        }
+        var row = targetElement.closest('tr');
+        if (row) {
+            return row.querySelector('.task-title-link') || row.querySelector('td:first-child') || row;
+        }
+        if (targetElement.classList && (targetElement.classList.contains('subtask-title') || targetElement.classList.contains('task-card-title') || targetElement.classList.contains('task-title-link'))) {
+            return targetElement;
+        }
+        return document.querySelector('.page-title') || null;
+    }
+
+    function showTaskCatCelebration(targetElement) {
+        var host = resolveScribbleHost(targetElement);
+        if (host) {
+            var oldLines = host.querySelectorAll('.task-scribble-line');
+            oldLines.forEach(function (el) {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            });
+            host.classList.add('task-scribble-host');
+            var scribbleWrap = document.createElement('span');
+            scribbleWrap.setAttribute('aria-hidden', 'true');
+            scribbleWrap.innerHTML =
+                '<svg class="task-scribble-line" viewBox="0 0 220 18" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<path d="M4 11 C 48 4, 92 15, 142 7 C 174 3, 198 13, 216 8" stroke="#2563EB" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<path d="M12 14 C 66 8, 128 14, 210 10" stroke="#059669" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.82"/>' +
+                '</svg>';
+            var scribbleSvg = scribbleWrap.firstChild;
+            if (scribbleSvg) {
+                host.appendChild(scribbleSvg);
+                window.setTimeout(function () {
+                    if (scribbleSvg.parentNode) {
+                        scribbleSvg.parentNode.removeChild(scribbleSvg);
+                    }
+                }, 2400);
+            }
+        }
+
+        if (activeCatTimer) {
+            window.clearTimeout(activeCatTimer);
+            activeCatTimer = null;
+        }
+        if (activeCatLeaveTimer) {
+            window.clearTimeout(activeCatLeaveTimer);
+            activeCatLeaveTimer = null;
+        }
+
+        var existing = document.querySelectorAll('.cat-celebration');
+        existing.forEach(function (node) {
+            if (node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
+
+        var msg = pickCatMessage();
+        var card = document.createElement('div');
+        card.className = 'cat-celebration';
+        card.setAttribute('role', 'status');
+        card.setAttribute('aria-live', 'polite');
+
+        card.innerHTML =
+            '<div class="cat-celebration-figure" aria-hidden="true">' +
+                '<svg class="cat-celebration-svg" viewBox="0 0 68 58" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                    '<path d="M12 24 L15 9 L25 18 Q30 16 35 18 L45 9 L48 24 C50 32 47 42 30 42 C13 42 10 32 12 24 Z" fill="#FFFFFF" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>' +
+                    '<path d="M16 13 L18 20 L23 18 Z" fill="#BFDBFE"/>' +
+                    '<path d="M44 13 L42 20 L37 18 Z" fill="#BFDBFE"/>' +
+                    '<circle cx="23" cy="26" r="2.2" fill="#0F172A"/>' +
+                    '<circle cx="37" cy="26" r="2.2" fill="#0F172A"/>' +
+                    '<circle cx="23.7" cy="25.3" r="0.7" fill="#FFFFFF"/>' +
+                    '<circle cx="37.7" cy="25.3" r="0.7" fill="#FFFFFF"/>' +
+                    '<polygon points="30,28.5 28,31 32,31" fill="#2563EB"/>' +
+                    '<path d="M26 33 Q30 36 34 33" stroke="#1E3A8A" stroke-width="1.8" stroke-linecap="round" fill="none"/>' +
+                    '<line x1="8" y1="27" x2="17" y2="28.5" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
+                    '<line x1="7" y1="31" x2="17" y2="31" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
+                    '<line x1="43" y1="28.5" x2="52" y2="27" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
+                    '<line x1="43" y1="31" x2="53" y2="31" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
+                    '<g class="cat-paw-group">' +
+                        '<ellipse cx="44" cy="39" rx="6.5" ry="4.5" transform="rotate(-18 44 39)" fill="#FFFFFF" stroke="#1E3A8A" stroke-width="1.8"/>' +
+                        '<circle cx="42" cy="37.5" r="1.2" fill="#93C5FD"/>' +
+                        '<circle cx="45" cy="36.8" r="1.2" fill="#93C5FD"/>' +
+                        '<circle cx="47.3" cy="38.2" r="1.2" fill="#93C5FD"/>' +
+                        '<path d="M46 41 L58 29 L61 32 L49 44 L45 45 Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="1.4" stroke-linejoin="round"/>' +
+                    '</g>' +
+                    '<path class="cat-paw-scribble" d="M8 50 C 20 45, 32 54, 46 47 C 54 44, 60 51, 65 47" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>' +
+            '</div>' +
+            '<div class="cat-celebration-bubble">' +
+                '<span class="cat-celebration-badge">✓ Görev Çizildi</span>' +
+                '<div class="cat-celebration-msg"></div>' +
+            '</div>';
+
+        var msgNode = card.querySelector('.cat-celebration-msg');
+        if (msgNode) {
+            msgNode.textContent = msg;
+        }
+
+        document.body.appendChild(card);
+
+        activeCatLeaveTimer = window.setTimeout(function () {
+            if (card && card.classList) {
+                card.classList.add('is-leaving');
+            }
+        }, 2180);
+
+        activeCatTimer = window.setTimeout(function () {
+            if (card && card.parentNode) {
+                card.parentNode.removeChild(card);
+            }
+        }, 2420);
+
+        return card;
+    }
+
+    window.showTaskCatCelebration = showTaskCatCelebration;
+
     function applyStatusClass(el, status) {
         if (!el) {
             return;
@@ -262,8 +412,15 @@
                         var card = select.closest('.task-card');
                         var targetCol = document.querySelector('.kanban-col[data-status="' + newStatus + '"] .kanban-list');
                         if (card && targetCol && card.parentNode !== targetCol) {
-                            targetCol.appendChild(card);
-                            updateKanbanCounts();
+                            if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                                document.startViewTransition(() => {
+                                    targetCol.appendChild(card);
+                                    updateKanbanCounts();
+                                });
+                            } else {
+                                targetCol.appendChild(card);
+                                updateKanbanCounts();
+                            }
                         }
 
                         var filterRow = select.closest('[data-filter-item]');
@@ -273,6 +430,10 @@
 
                         if (typeof result.data.ilerleme !== 'undefined') {
                             updateLiveProgress(result.data.ilerleme);
+                        }
+
+                        if (newStatus === 'tamamlandi') {
+                            showTaskCatCelebration(card || filterRow || select);
                         }
 
                         showToast('Görev durumu güncellendi.', 'success');
@@ -514,56 +675,55 @@
             });
         }
 
-        function applyFilters() {
+        function applyClientFilters() {
             var q = searchInput ? searchInput.value.trim().toLocaleLowerCase('tr-TR') : '';
             var st = statusSelect ? statusSelect.value : '';
             var pr = prioritySelect ? prioritySelect.value : '';
             var un = unitSelect ? unitSelect.value : activeUnit;
-            var visibleCount = 0;
 
-            items.forEach(function (item) {
-                var text = (item.getAttribute('data-search-text') || item.textContent || '').toLocaleLowerCase('tr-TR');
-                var itemStatus = item.getAttribute('data-status') || '';
-                var itemPriority = item.getAttribute('data-priority') || '';
-                var itemUnit = item.getAttribute('data-unit') || '';
+            var updateDom = function () {
+                var visibleCount = 0;
 
-                var matchSearch = !q || text.indexOf(q) !== -1;
-                var matchStatus = !st || itemStatus === st;
-                var matchPriority = !pr || itemPriority === pr;
-                var matchUnit = !un || itemUnit === un;
+                items.forEach(function (item) {
+                    var text = (item.getAttribute('data-search-text') || item.textContent || '').toLocaleLowerCase('tr-TR');
+                    var itemStatus = item.getAttribute('data-status') || '';
+                    var itemPriority = item.getAttribute('data-priority') || '';
+                    var itemUnit = item.getAttribute('data-unit') || '';
 
-                var show = matchSearch && matchStatus && matchPriority && matchUnit;
-                item.style.display = show ? '' : 'none';
-                if (show) {
-                    visibleCount++;
+                    var matchSearch = !q || text.indexOf(q) !== -1;
+                    var matchStatus = !st || itemStatus === st;
+                    var matchPriority = !pr || itemPriority === pr;
+                    var matchUnit = !un || itemUnit === un;
+
+                    var show = matchSearch && matchStatus && matchPriority && matchUnit;
+                    item.style.display = show ? '' : 'none';
+                    if (show) {
+                        visibleCount++;
+                    }
+                });
+
+                if (emptyEl) {
+                    emptyEl.style.display = visibleCount === 0 ? '' : 'none';
                 }
-            });
 
-            if (emptyEl) {
-                emptyEl.style.display = visibleCount === 0 ? '' : 'none';
+                if (document.querySelector('.kanban-col[data-status]')) {
+                    updateKanbanCounts();
+                }
+            };
+
+            if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.startViewTransition(() => {
+                    updateDom();
+                });
+            } else {
+                updateDom();
             }
+        }
 
-            if (document.querySelector('.kanban-col[data-status]')) {
-                updateKanbanCounts();
+        function initUnitFilterBar() {
+            if (!unitButtons.length) {
+                return;
             }
-        }
-
-        if (searchInput) {
-            searchInput.addEventListener('input', applyFilters);
-        }
-        if (statusSelect) {
-            statusSelect.addEventListener('change', applyFilters);
-        }
-        if (prioritySelect) {
-            prioritySelect.addEventListener('change', applyFilters);
-        }
-        if (unitSelect) {
-            unitSelect.addEventListener('change', function () {
-                activeUnit = unitSelect.value;
-                applyFilters();
-            });
-        }
-        if (unitButtons.length) {
             unitButtons.forEach(function (btn) {
                 btn.addEventListener('click', function (e) {
                     var bar = btn.closest('[data-server-filtered="1"]');
@@ -583,13 +743,30 @@
                             window.history.replaceState(null, '', href);
                         }
                     }
-                    applyFilters();
+                    applyClientFilters();
                 });
             });
         }
 
+        if (searchInput) {
+            searchInput.addEventListener('input', applyClientFilters);
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', applyClientFilters);
+        }
+        if (prioritySelect) {
+            prioritySelect.addEventListener('change', applyClientFilters);
+        }
+        if (unitSelect) {
+            unitSelect.addEventListener('change', function () {
+                activeUnit = unitSelect.value;
+                applyClientFilters();
+            });
+        }
+        initUnitFilterBar();
+
         if (activeUnit) {
-            applyFilters();
+            applyClientFilters();
         }
     }
 
@@ -1322,6 +1499,9 @@
                     }
                     if (result.data.gorev_durum) {
                         syncTaskStatusUI(result.data.gorev_durum);
+                    }
+                    if (checked === 1) {
+                        showTaskCatCelebration(row || cb);
                     }
                 })
                 .catch(function (err) {

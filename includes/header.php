@@ -76,7 +76,7 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
     <title><?php echo e($sayfa_basligi); ?> — GörevTakip</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=<?php echo e((string) $css_ver); ?>">
 </head>
 <body>
@@ -171,7 +171,7 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
                 </a>
 
                 <a href="profil.php" class="user-pill" title="<?php echo e($ust_kullanici['ad_soyad']); ?>">
-                    <span class="avatar avatar-sm"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
+                    <span class="avatar avatar-sm<?php echo function_exists('avatar_renk_sinifi') ? ' ' . e(avatar_renk_sinifi($ust_kullanici['ad_soyad'])) : ''; ?>"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
                     <span class="user-pill-name"><?php echo e($ust_kullanici['ad_soyad']); ?></span>
                 </a>
             <?php else: ?>
@@ -330,7 +330,7 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
     <div class="drawer-footer">
         <?php if ($oturum_acik && $ust_kullanici): ?>
             <div class="drawer-user">
-                <span class="avatar"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
+                <span class="avatar<?php echo function_exists('avatar_renk_sinifi') ? ' ' . e(avatar_renk_sinifi($ust_kullanici['ad_soyad'])) : ''; ?>"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
                 <div class="drawer-user-info">
                     <span class="drawer-user-name"><?php echo e($ust_kullanici['ad_soyad']); ?></span>
                     <span class="drawer-user-role"><?php echo $ust_ekip_lideri ? 'Ekip Lideri' : 'Üye'; ?></span>

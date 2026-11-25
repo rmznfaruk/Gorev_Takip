@@ -58,10 +58,46 @@
     --shadow-drawer: 0 20px 50px rgba(15, 23, 42, 0.16);
 
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Space Grotesk', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     --container-max: 1140px;
     --topbar-height: 60px;
+}
+
+/* Sayfalar Arası ve Grup Öğe Geçişleri (View Transitions) */
+@keyframes vt-fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes vt-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+::view-transition {
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    @view-transition {
+        navigation: auto;
+    }
+    ::view-transition-old(root) {
+        animation: 0.18s ease-out both vt-fade-out;
+    }
+    ::view-transition-new(root) {
+        animation: 0.22s ease-out both vt-fade-in;
+    }
 }
 
 /* Temel Sıfırlama */
@@ -92,9 +128,21 @@ body {
     flex-direction: column;
     font-family: var(--font-sans);
     font-size: 0.9375rem;
-    line-height: 1.6;
+    font-size-adjust: from-font;
+    line-height: 1.5;
     color: var(--text-primary);
     background-color: var(--bg-page);
+}
+
+p,
+.card,
+.main-content,
+.comment-text,
+.page-subtitle,
+.hero-lead,
+.hero-desc {
+    font-size-adjust: from-font;
+    line-height: 1.5;
 }
 
 body.drawer-open {
@@ -137,6 +185,24 @@ p:last-child {
 .mono {
     font-family: var(--font-mono);
     font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-value,
+.donut-percent,
+.kanban-count,
+.mono,
+.data-table td,
+.progress-pct,
+.inline-progress-val,
+.progress-summary-pct,
+.room-mini-pct,
+.donut-stat-val,
+.tab-count,
+.week-group-badge,
+.calendar-day-num,
+.deadline-day {
+    font-variant-numeric: tabular-nums;
 }
 
 .text-muted {
@@ -274,6 +340,7 @@ p:last-child {
     align-items: center;
     gap: 0.65rem;
     color: var(--text-primary);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 1.0625rem;
     letter-spacing: -0.025em;
@@ -567,9 +634,11 @@ p:last-child {
 }
 
 .page-title {
-    font-size: 1.6rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 1.1rem + 0.85vw, 1.75rem);
     font-weight: 700;
     color: var(--text-primary);
+    text-wrap: balance;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
@@ -579,7 +648,8 @@ p:last-child {
     font-size: 0.92rem;
     color: var(--text-muted);
     min-width: 0;
-    max-width: 100%;
+    max-width: 68ch;
+    text-wrap: pretty;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
@@ -604,6 +674,7 @@ p:last-child {
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
+    text-wrap: balance;
 }
 
 /* Butonlar */
@@ -846,7 +917,8 @@ p:last-child {
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.15;
-    font-family: var(--font-mono);
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-meta {
@@ -1504,6 +1576,19 @@ dialog.modal-dialog[open] {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, overlay 0.18s allow-discrete, display 0.18s allow-discrete;
+    transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    @starting-style {
+        dialog.modal-dialog[open] {
+            opacity: 0;
+            transform: scale(0.97);
+        }
+    }
 }
 
 dialog.modal-dialog > form {
@@ -1615,6 +1700,43 @@ dialog.modal-dialog::backdrop {
     letter-spacing: 0.02em;
 }
 
+/* 6 Renkli Avatar Tonu */
+.avatar-tone-1 {
+    background-color: #EFF6FF;
+    color: #1D4ED8;
+    border-color: #BFDBFE;
+}
+
+.avatar-tone-2 {
+    background-color: #ECFDF5;
+    color: #047857;
+    border-color: #A7F3D0;
+}
+
+.avatar-tone-3 {
+    background-color: #FFFBEB;
+    color: #B45309;
+    border-color: #FDE68A;
+}
+
+.avatar-tone-4 {
+    background-color: #EEF2FF;
+    color: #4338CA;
+    border-color: #C7D2FE;
+}
+
+.avatar-tone-5 {
+    background-color: #FFF1F2;
+    color: #BE123C;
+    border-color: #FECDD3;
+}
+
+.avatar-tone-6 {
+    background-color: #F0FDFA;
+    color: #0F766E;
+    border-color: #99F6E4;
+}
+
 /* Yorumlar */
 .comment-list {
     display: flex;
@@ -1674,6 +1796,8 @@ dialog.modal-dialog::backdrop {
 .comment-text {
     font-size: 0.885rem;
     color: var(--text-secondary);
+    max-width: 68ch;
+    text-wrap: pretty;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -1687,6 +1811,15 @@ dialog.modal-dialog::backdrop {
     border-radius: var(--radius-lg);
     background-color: var(--bg-page);
     color: var(--text-muted);
+}
+
+.empty-state-illustration {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 0.75rem;
+    display: block;
+    color: var(--accent);
+    opacity: 0.88;
 }
 
 .empty-state-title {
@@ -1800,9 +1933,11 @@ dialog.modal-dialog::backdrop {
 }
 
 .auth-title {
+    font-family: var(--font-display);
     font-size: 1.45rem;
     font-weight: 700;
     margin-bottom: 0.35rem;
+    text-wrap: balance;
 }
 
 .auth-footer {
@@ -1880,16 +2015,21 @@ dialog.modal-dialog::backdrop {
 }
 
 .hero-title {
-    font-size: 2.3rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 1.35rem + 1.6vw, 2.45rem);
     line-height: 1.16;
     letter-spacing: -0.03em;
     margin-bottom: 1rem;
+    text-wrap: balance;
 }
 
-.hero-lead {
+.hero-lead,
+.hero-desc {
     font-size: 1.02rem;
-    line-height: 1.65;
+    line-height: 1.5;
     color: var(--text-secondary);
+    max-width: 68ch;
+    text-wrap: pretty;
     margin-bottom: 1.65rem;
 }
 
@@ -2411,6 +2551,14 @@ dialog.modal-dialog::backdrop {
     line-height: 1.35;
     white-space: nowrap;
     letter-spacing: 0.01em;
+}
+
+.unit-tag svg.unit-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    vertical-align: -2px;
+    display: inline-block;
 }
 
 .unit-yazilim {
@@ -3118,7 +3266,8 @@ dialog.modal-dialog::backdrop {
 }
 
 .donut-percent {
-    font-family: var(--font-mono);
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
     font-size: 1.65rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -4539,6 +4688,188 @@ dialog.modal-dialog::backdrop {
 }
 
 /* ==========================================================================
+   Görev Tamamlama Kedisi & Kalem/Pati Karalama Kutlaması
+   ========================================================================== */
+@keyframes catCardIn {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 14px, 0) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@keyframes catCardOut {
+    0% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(0, 10px, 0) scale(0.96);
+    }
+}
+
+@keyframes catScribbleDraw {
+    0% {
+        stroke-dashoffset: 240;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes catPawWave {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    35% {
+        transform: translate3d(3px, -2px, 0) rotate(8deg);
+    }
+    70% {
+        transform: translate3d(-2px, 1px, 0) rotate(-6deg);
+    }
+}
+
+.cat-celebration {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 348px;
+    max-width: calc(100vw - 24px);
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--accent-border);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    user-select: none;
+    box-sizing: border-box;
+    overflow: hidden;
+    animation: catCardIn 0.24s ease-out both;
+}
+
+.cat-celebration.is-leaving {
+    animation: catCardOut 0.22s ease-in both;
+}
+
+.cat-celebration-figure {
+    width: 66px;
+    height: 58px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.cat-celebration-svg {
+    width: 62px;
+    height: 54px;
+    display: block;
+}
+
+.cat-paw-group {
+    transform-origin: 42px 34px;
+    animation: catPawWave 0.6s ease-in-out 2;
+}
+
+.cat-paw-scribble {
+    stroke-dasharray: 240;
+    stroke-dashoffset: 240;
+    animation: catScribbleDraw 0.65s ease-out 0.1s forwards;
+}
+
+.cat-celebration-bubble {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.cat-celebration-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--success);
+}
+
+.cat-celebration-msg {
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.38;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.task-scribble-host {
+    position: relative;
+}
+
+.task-scribble-line {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 50%;
+    width: calc(100% - 8px);
+    max-width: 100%;
+    height: 16px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    overflow: visible;
+    z-index: 4;
+}
+
+.task-scribble-line path {
+    stroke-dasharray: 240;
+    stroke-dashoffset: 240;
+    animation: catScribbleDraw 0.55s ease-out forwards;
+}
+
+@media (max-width: 640px) {
+    .cat-celebration {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: auto;
+        max-width: calc(100vw - 24px);
+        padding: 0.65rem 0.75rem;
+        gap: 0.6rem;
+    }
+
+    .cat-celebration-figure {
+        width: 56px;
+        height: 50px;
+    }
+
+    .cat-celebration-svg {
+        width: 52px;
+        height: 46px;
+    }
+
+    .cat-celebration-msg {
+        font-size: 0.78rem;
+    }
+}
+
+/* ==========================================================================
    Yazdırma / PDF Rapor Stilleri (A4)
    ========================================================================== */
 @page {
@@ -4563,6 +4894,8 @@ dialog.modal-dialog::backdrop {
     .page-actions,
     .alert,
     .toast-container,
+    .cat-celebration,
+    .task-scribble-line,
     dialog,
     .modal-dialog,
     .no-print,

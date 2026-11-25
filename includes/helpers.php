@@ -160,6 +160,20 @@ function bas_harfler($ad)
     return $harfler !== '' ? $harfler : 'GT';
 }
 
+function avatar_renk_sinifi($metin)
+{
+    $temiz = trim((string) $metin);
+    if ($temiz === '') {
+        return 'avatar-tone-1';
+    }
+    $kucuk = function_exists('mb_strtolower')
+        ? mb_strtolower($temiz, 'UTF-8')
+        : strtolower($temiz);
+    $hash = (int) sprintf('%u', crc32($kucuk));
+    $ton = ($hash % 6) + 1;
+    return 'avatar-tone-' . $ton;
+}
+
 function yonlendir($url)
 {
     header('Location: ' . $url);
@@ -221,6 +235,27 @@ function birim_filtre_degerleri($birim_kodu)
     return array($kod);
 }
 
+function birim_ikonu($birim)
+{
+    $anahtar = birim_kodu_normalize($birim, 'genel');
+    if ($anahtar === 'aviyonik') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>';
+    }
+    if ($anahtar === 'yazilim') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline><line x1="14" y1="4" x2="10" y2="20"></line></svg>';
+    }
+    if ($anahtar === 'elektronik') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect><rect x="9.5" y="9.5" width="5" height="5" rx="1"></rect><line x1="9" y1="2" x2="9" y2="6"></line><line x1="15" y1="2" x2="15" y2="6"></line><line x1="9" y1="18" x2="9" y2="22"></line><line x1="15" y1="18" x2="15" y2="22"></line><line x1="2" y1="9" x2="6" y2="9"></line><line x1="2" y1="15" x2="6" y2="15"></line><line x1="18" y1="9" x2="22" y2="9"></line><line x1="18" y1="15" x2="22" y2="15"></line></svg>';
+    }
+    if ($anahtar === 'mekanik') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"></path></svg>';
+    }
+    if ($anahtar === 'raporlama') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>';
+    }
+    return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>';
+}
+
 function birim_etiketi($birim)
 {
     $secenekler = birim_secenekleri();
@@ -229,7 +264,32 @@ function birim_etiketi($birim)
         'kod' => $anahtar,
         'metin' => $secenekler[$anahtar],
         'sinif' => 'unit-' . $anahtar,
+        'ikon' => birim_ikonu($anahtar),
     );
+}
+
+function birim_roket_etiketi_html($birim)
+{
+    $bilgi = birim_etiketi($birim);
+    return '<span class="unit-tag ' . e($bilgi['sinif']) . '">' . $bilgi['ikon'] . '<span>' . e($bilgi['metin']) . '</span></span>';
+}
+
+function bos_durum_gorseli($tip = 'gorev')
+{
+    $tur = is_string($tip) ? trim($tip) : 'gorev';
+    if ($tur === 'oda') {
+        return '<svg class="empty-state-illustration" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="10" width="20" height="20" rx="4" stroke="#2563eb"></rect><rect x="36" y="10" width="20" height="20" rx="4" stroke="#64748b"></rect><rect x="8" y="36" width="20" height="18" rx="4" stroke="#64748b"></rect><rect x="36" y="36" width="20" height="18" rx="4" stroke="#2563eb" stroke-dasharray="3 3"></rect><line x1="46" y1="41" x2="46" y2="49" stroke="#2563eb"></line><line x1="42" y1="45" x2="50" y2="45" stroke="#2563eb"></line></svg>';
+    }
+    if ($tur === 'takvim') {
+        return '<svg class="empty-state-illustration" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="14" width="44" height="40" rx="6" stroke="#64748b"></rect><line x1="10" y1="25" x2="54" y2="25" stroke="#64748b"></line><line x1="21" y1="9" x2="21" y2="17" stroke="#2563eb" stroke-width="2"></line><line x1="43" y1="9" x2="43" y2="17" stroke="#2563eb" stroke-width="2"></line><circle cx="24" cy="35" r="2" fill="#2563eb" stroke="none"></circle><circle cx="32" cy="35" r="2" fill="#94a3b8" stroke="none"></circle><circle cx="40" cy="35" r="2" fill="#94a3b8" stroke="none"></circle><path d="M26 44l4 4 8-8" stroke="#2563eb" stroke-width="2"></path></svg>';
+    }
+    if ($tur === 'yorum') {
+        return '<svg class="empty-state-illustration" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16h40a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H26l-10 8v-8h-4a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4z" stroke="#64748b"></path><line x1="22" y1="27" x2="42" y2="27" stroke="#2563eb" stroke-width="2"></line><line x1="22" y1="35" x2="34" y2="35" stroke="#94a3b8" stroke-width="2"></line></svg>';
+    }
+    if ($tur === 'aktivite') {
+        return '<svg class="empty-state-illustration" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="22" stroke="#64748b" stroke-dasharray="4 3"></circle><polyline points="16 33 25 33 29 23 35 41 39 33 48 33" stroke="#2563eb" stroke-width="2"></polyline></svg>';
+    }
+    return '<svg class="empty-state-illustration" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="10" width="36" height="44" rx="5" stroke="#64748b"></rect><path d="M24 10h16v5a2 2 0 0 1-2 2H26a2 2 0 0 1-2-2v-5z" stroke="#2563eb"></path><path d="M22 28l3 3 6-6" stroke="#2563eb" stroke-width="2"></path><line x1="35" y1="28" x2="43" y2="28" stroke="#94a3b8"></line><circle cx="25" cy="40" r="2" stroke="#94a3b8"></circle><line x1="35" y1="40" x2="43" y2="40" stroke="#94a3b8"></line></svg>';
 }
 
 function birim_gecerli_mi($birim)

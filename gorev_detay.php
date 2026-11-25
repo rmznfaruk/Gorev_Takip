@@ -587,6 +587,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="week-groups" data-week-groups>
                 <?php if (empty($hafta_gruplari)): ?>
                     <div class="empty-state">
+                        <?php echo bos_durum_gorseli('gorev'); ?>
                         <div class="empty-state-title">Henüz haftalık alt görev eklenmemiş</div>
                         <p>Bu ana görevi <strong>Hafta 1, Hafta 2</strong> şeklinde alt görevlere bölüp ekip üyelerine atayabilirsiniz.</p>
                     </div>
@@ -625,7 +626,7 @@ require_once __DIR__ . '/includes/header.php';
                                         <div class="subtask-right">
                                             <?php if (!empty($alt['atanan_adi'])): ?>
                                                 <span class="assignee-cell" title="<?php echo e($alt['atanan_adi']); ?>">
-                                                    <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($alt['atanan_adi'])); ?></span>
+                                                    <span class="avatar-xs <?php echo e(avatar_renk_sinifi($alt['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($alt['atanan_adi'])); ?></span>
                                                     <span><?php echo e($alt['atanan_adi']); ?></span>
                                                 </span>
                                             <?php endif; ?>
@@ -694,6 +695,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <?php if (empty($gorev_dosyalari)): ?>
                 <div class="empty-state">
+                    <?php echo bos_durum_gorseli('gorev'); ?>
                     <p>Bu görev için henüz dosya veya harici bağlantı eklenmemiş.</p>
                 </div>
             <?php else: ?>
@@ -826,13 +828,14 @@ require_once __DIR__ . '/includes/header.php';
             <div class="comment-list" data-comment-list>
                 <?php if (empty($yorumlar)): ?>
                     <div class="empty-state">
+                        <?php echo bos_durum_gorseli('yorum'); ?>
                         <p>Bu görev için henüz yorum yapılmamış.</p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($yorumlar as $yorum): ?>
                         <?php $silebilir = ((int) $yorum['kullanici_id'] === $kullanici_id) || $proje_yonetebilir; ?>
                         <div class="comment-item" data-comment-item="<?php echo (int) $yorum['id']; ?>">
-                            <div class="avatar"><?php echo e(bas_harfler($yorum['ad_soyad'])); ?></div>
+                            <div class="avatar <?php echo e(avatar_renk_sinifi($yorum['ad_soyad'])); ?>"><?php echo e(bas_harfler($yorum['ad_soyad'])); ?></div>
                             <div class="comment-body">
                                 <div class="comment-meta">
                                     <div>
@@ -920,7 +923,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
                 <div class="meta-row">
                     <span class="meta-key">Alt Ekip / Birim</span>
-                    <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo e($birim_bilgi['metin']); ?></span>
+                    <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu($gorev_birim_kodu); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
                 </div>
                 <div class="meta-row">
                     <span class="meta-key">Öncelik</span>
@@ -937,7 +940,7 @@ require_once __DIR__ . '/includes/header.php';
                     <span class="meta-key">Atanan</span>
                     <?php if ($gorev['atanan_adi']): ?>
                         <span class="assignee-cell">
-                            <span class="avatar-xs" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
+                            <span class="avatar-xs <?php echo e(avatar_renk_sinifi($gorev['atanan_adi'])); ?>" aria-hidden="true"><?php echo e(bas_harfler($gorev['atanan_adi'])); ?></span>
                             <span><?php echo e($gorev['atanan_adi']); ?></span>
                         </span>
                     <?php else: ?>

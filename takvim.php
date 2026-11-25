@@ -189,4 +189,12 @@ require_once __DIR__ . '/includes/header.php';
     <?php endfor; ?>
 </div>
 
+<?php if (empty($aylik_gorevler)): ?>
+    <div class="card empty-state" style="margin-top:1rem;">
+        <?php echo bos_durum_gorseli('takvim'); ?>
+        <div class="empty-state-title"><?php echo e($ay_adi . ' ' . $yil); ?> için planlanmış teslim yok</div>
+        <p>Son teslim tarihi bu aya denk gelen görevler takvim hücrelerinde renkli rozet olarak listelenir.</p>
+    </div>
+<?php endif; ?>
+
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
