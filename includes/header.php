@@ -60,6 +60,12 @@ $hizli_yeni_gorev_link = !empty($ust_odalar)
 
 $flash_mesajlar = flash_al();
 $csrf_meta = csrf_token();
+$css_dosya_yolu = __DIR__ . '/../assets/css/style.css';
+$js_dosya_yolu = __DIR__ . '/../assets/js/app.js';
+$css_ver = is_file($css_dosya_yolu) ? (int) @filemtime($css_dosya_yolu) : 20261125;
+$js_ver = is_file($js_dosya_yolu) ? (int) @filemtime($js_dosya_yolu) : 20261125;
+$app_css_href = 'assets/css/style.css?v=' . $css_ver;
+$app_js_src = 'assets/js/app.js?v=' . $js_ver;
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -71,7 +77,7 @@ $csrf_meta = csrf_token();
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?php echo e((string) $css_ver); ?>">
 </head>
 <body>
 <header class="topbar">
@@ -166,7 +172,7 @@ $csrf_meta = csrf_token();
 
                 <a href="profil.php" class="user-pill" title="<?php echo e($ust_kullanici['ad_soyad']); ?>">
                     <span class="avatar avatar-sm"><?php echo e(bas_harfler($ust_kullanici['ad_soyad'])); ?></span>
-                    <span><?php echo e($ust_kullanici['ad_soyad']); ?></span>
+                    <span class="user-pill-name"><?php echo e($ust_kullanici['ad_soyad']); ?></span>
                 </a>
             <?php else: ?>
                 <a href="login.php" class="btn btn-primary btn-sm">Giriş Yap</a>

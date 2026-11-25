@@ -342,7 +342,7 @@ $aktif_sayfa = 'projeler';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div class="page-header">
+<div class="page-header room-header-top">
     <div>
         <div class="stack-sm" style="margin-bottom:0.35rem;">
             <a href="projeler.php" class="btn btn-ghost btn-sm">&larr; Çalışma Odaları</a>
@@ -420,7 +420,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<div class="tabs no-print" role="tablist" aria-label="Oda görünümleri">
+<div class="tabs room-tabs no-print" role="tablist" aria-label="Oda görünümleri">
     <button type="button" class="tab-link active" role="tab" aria-selected="true" data-tab-target="kanban">
         <span>Kanban Panosu</span>
         <span class="tab-count"><?php echo (int) $proje_toplam_gorev; ?></span>
@@ -684,21 +684,23 @@ require_once __DIR__ . '/includes/header.php';
                             <?php if ($proje_kurucu_yetkisi): ?>
                                 <td data-label="İşlem" class="cell-actions-right">
                                     <?php if (!$kurucu_mu): ?>
-                                        <form method="post" action="proje_detay.php?id=<?php echo $proje_id; ?>" style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
-                                            <input type="hidden" name="islem" value="uye_yetki">
-                                            <input type="hidden" name="kullanici_id" value="<?php echo (int) $uye['kullanici_id']; ?>">
-                                            <input type="hidden" name="yetki" value="<?php echo $birim_lideri_mi ? 'uye' : 'lider'; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm">
-                                                <?php echo $birim_lideri_mi ? 'Üye Yap' : 'Birim Lideri Yap'; ?>
-                                            </button>
-                                        </form>
-                                        <form method="post" action="proje_detay.php?id=<?php echo $proje_id; ?>" style="display:inline;" data-confirm="Bu üyeyi odadan çıkarmak istediğinize emin misiniz?">
-                                            <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
-                                            <input type="hidden" name="islem" value="uye_cikar">
-                                            <input type="hidden" name="kullanici_id" value="<?php echo (int) $uye['kullanici_id']; ?>">
-                                            <button type="submit" class="btn btn-ghost btn-sm text-danger">Çıkar</button>
-                                        </form>
+                                        <div class="table-action-group">
+                                            <form method="post" action="proje_detay.php?id=<?php echo $proje_id; ?>" class="inline-action-form">
+                                                <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
+                                                <input type="hidden" name="islem" value="uye_yetki">
+                                                <input type="hidden" name="kullanici_id" value="<?php echo (int) $uye['kullanici_id']; ?>">
+                                                <input type="hidden" name="yetki" value="<?php echo $birim_lideri_mi ? 'uye' : 'lider'; ?>">
+                                                <button type="submit" class="btn btn-secondary btn-sm">
+                                                    <?php echo $birim_lideri_mi ? 'Üye Yap' : 'Birim Lideri Yap'; ?>
+                                                </button>
+                                            </form>
+                                            <form method="post" action="proje_detay.php?id=<?php echo $proje_id; ?>" class="inline-action-form" data-confirm="Bu üyeyi odadan çıkarmak istediğinize emin misiniz?">
+                                                <input type="hidden" name="csrf_token" value="<?php echo e($csrf); ?>">
+                                                <input type="hidden" name="islem" value="uye_cikar">
+                                                <input type="hidden" name="kullanici_id" value="<?php echo (int) $uye['kullanici_id']; ?>">
+                                                <button type="submit" class="btn btn-ghost btn-sm text-danger">Çıkar</button>
+                                            </form>
+                                        </div>
                                     <?php else: ?>
                                         <span class="text-muted" style="font-size:0.78rem;">Ekip Lideri</span>
                                     <?php endif; ?>

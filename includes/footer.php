@@ -18,6 +18,9 @@
     </div>
 </footer>
 
-<script src="assets/js/app.js"></script>
+<?php
+$footer_js_ver = isset($js_ver) && $js_ver ? (int) $js_ver : (is_file(__DIR__ . '/../assets/js/app.js') ? (int) @filemtime(__DIR__ . '/../assets/js/app.js') : 20261125);
+?>
+<script src="assets/js/app.js?v=<?php echo e((string) $footer_js_ver); ?>"></script>
 </body>
 </html>
