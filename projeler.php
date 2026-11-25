@@ -371,8 +371,9 @@ require_once __DIR__ . '/includes/header.php';
             $oda_gorevleri = isset($proje_gorev_haritasi[$pid_key]) ? $proje_gorev_haritasi[$pid_key] : array();
             $ilerleme_yuzde = gorev_listesi_ortalama_ilerleme($oda_gorevleri);
             $renk_idx = (int) $proje['id'] % 6;
+            $oda_aksan = oda_renk_sinifi($proje['kod']);
             ?>
-            <article class="room-card"
+            <article class="room-card <?php echo e($oda_aksan); ?>"
                      data-filter-item
                      data-status="<?php echo e($proje['durum']); ?>"
                      data-search-text="<?php echo e($proje['kod'] . ' ' . $proje['davet_kodu'] . ' ' . $proje['ad'] . ' ' . (string) $proje['aciklama']); ?>">

@@ -509,7 +509,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php else: ?>
                                     <span class="assignee-unassigned">Atanmadı</span>
                                 <?php endif; ?>
-                                <span class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></span>
+                                <?php echo son_tarih_aciliyet_html($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi'); ?>
                             </div>
                             <div class="task-card-footer">
                                 <?php if ($durum_degistirebilir): ?>
@@ -609,7 +609,7 @@ require_once __DIR__ . '/includes/header.php';
                                         <span class="assignee-unassigned">Atanmadı</span>
                                     <?php endif; ?>
                                 </td>
-                                <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                                <td data-label="Son Tarih"><?php echo son_tarih_aciliyet_html($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi'); ?></td>
                                 <td data-label="Durum">
                                     <?php if ($durum_degistirebilir): ?>
                                         <select class="status-select <?php echo e($durum_sinifi); ?>"

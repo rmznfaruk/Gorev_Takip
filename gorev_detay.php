@@ -631,7 +631,7 @@ require_once __DIR__ . '/includes/header.php';
                                                 </span>
                                             <?php endif; ?>
                                             <?php if (!empty($alt['son_tarih'])): ?>
-                                                <span class="date-muted"><?php echo e(tarih_format($alt['son_tarih'])); ?></span>
+                                                <?php echo son_tarih_aciliyet_html($alt['son_tarih'], $tamam_mi); ?>
                                             <?php endif; ?>
                                             <?php if ($proje_yonetebilir): ?>
                                                 <button type="button"
@@ -950,9 +950,10 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="meta-row">
                     <span class="meta-key">Son Tarih</span>
                     <span class="meta-val" style="display:inline-flex;align-items:center;gap:0.45rem;flex-wrap:wrap;justify-content:flex-end;">
-                        <span class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></span>
+                        <?php echo son_tarih_aciliyet_html($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi'); ?>
                         <?php if (!empty($teslim_durumu['kisa'])): ?>
                             <?php
+                            $gorev_aciliyet = gorev_aciliyet_bilgisi($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi');
                             $td_sinif = 'deadline-ok';
                             if ($teslim_durumu['durum'] === 'gecikti') {
                                 $td_sinif = 'deadline-overdue';
@@ -960,7 +961,7 @@ require_once __DIR__ . '/includes/header.php';
                                 $td_sinif = 'deadline-soon';
                             }
                             ?>
-                            <span class="deadline-badge <?php echo $td_sinif; ?>"><?php echo e($teslim_durumu['kisa']); ?></span>
+                            <span class="deadline-badge <?php echo e($td_sinif . ' ' . $gorev_aciliyet['sinif']); ?>"><?php echo e($teslim_durumu['kisa']); ?></span>
                         <?php endif; ?>
                     </span>
                 </div>

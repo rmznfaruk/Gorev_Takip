@@ -223,7 +223,7 @@ require_once __DIR__ . '/includes/header.php';
                                     <span><?php echo e($oncelik['metin']); ?></span>
                                 </span>
                             </td>
-                            <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                            <td data-label="Son Tarih"><?php echo son_tarih_aciliyet_html($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi'); ?></td>
                             <td data-label="Durum">
                                 <?php if ($degistirebilir): ?>
                                     <select class="status-select <?php echo e($durum_sinifi); ?>"

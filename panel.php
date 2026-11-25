@@ -231,8 +231,9 @@ require_once __DIR__ . '/includes/header.php';
                         <?php
                         $renk_idx = (int) $proje['id'] % 6;
                         $ilerleme = (int) $proje['ilerleme'];
+                        $oda_aksan = oda_renk_sinifi($proje['kod']);
                         ?>
-                        <a href="proje_detay.php?id=<?php echo (int) $proje['id']; ?>" class="room-mini-card">
+                        <a href="proje_detay.php?id=<?php echo (int) $proje['id']; ?>" class="room-mini-card <?php echo e($oda_aksan); ?>">
                             <div class="room-mini-head">
                                 <span class="room-mini-title-wrap">
                                     <span class="room-dot room-dot-<?php echo $renk_idx; ?>" aria-hidden="true"></span>
@@ -321,7 +322,7 @@ require_once __DIR__ . '/includes/header.php';
                                             <span class="inline-progress-val">%<?php echo $g_ilerleme; ?></span>
                                         </div>
                                     </td>
-                                    <td data-label="Son Tarih" class="date-muted"><?php echo e(tarih_format($gorev['son_tarih'])); ?></td>
+                                    <td data-label="Son Tarih"><?php echo son_tarih_aciliyet_html($gorev['son_tarih'], $gorev['durum'] === 'tamamlandi'); ?></td>
                                     <td data-label="Durum">
                                         <select class="status-select <?php echo e($durum_sinifi); ?>"
                                                 aria-label="Görev durumunu değiştir"
@@ -404,6 +405,7 @@ require_once __DIR__ . '/includes/header.php';
                         $ay_no = $ts ? (int) date('n', $ts) : 0;
                         $ay_kisa = isset($kisa_aylar[$ay_no]) ? $kisa_aylar[$ay_no] : '';
                         $td = isset($yg['teslim_durumu']) ? $yg['teslim_durumu'] : array('durum' => 'normal', 'kisa' => '');
+                        $aciliyet = gorev_aciliyet_bilgisi($yg['son_tarih'], $yg['durum'] === 'tamamlandi');
                         $rozet_sinif = 'deadline-ok';
                         if ($td['durum'] === 'gecikti') {
                             $rozet_sinif = 'deadline-overdue';
@@ -420,9 +422,15 @@ require_once __DIR__ . '/includes/header.php';
                                 <div class="deadline-title"><?php echo e($yg['baslik']); ?></div>
                                 <div class="deadline-room"><?php echo e($yg['proje_adi']); ?></div>
                             </div>
-                            <?php if (!empty($td['kisa'])): ?>
-                                <span class="deadline-badge <?php echo $rozet_sinif; ?>"><?php echo e($td['kisa']); ?></span>
-                            <?php endif; ?>
+                            <span class="deadline-badge <?php echo e($rozet_sinif . ' ' . $aciliyet['sinif']); ?>" title="<?php echo e($aciliyet['etiket']); ?>" style="display:inline-flex;align-items:center;gap:0.28rem;flex-shrink:0;">
+                                <?php if (!empty($aciliyet['pulse'])): ?>
+                                    <span class="urgency-pulse-dot" aria-hidden="true"></span>
+                                <?php endif; ?>
+                                <?php echo stickman_durum_ikonu($aciliyet['mod']); ?>
+                                <?php if (!empty($td['kisa'])): ?>
+                                    <span><?php echo e($td['kisa']); ?></span>
+                                <?php endif; ?>
+                            </span>
                         </a>
                     <?php endforeach; ?>
                 </div>

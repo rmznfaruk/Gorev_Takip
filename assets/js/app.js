@@ -19,155 +19,497 @@
 
     var STATUS_CLASSES = ['status-yapilacak', 'status-devam_ediyor', 'status-tamamlandi'];
 
-    var CAT_CELEBRATION_MESSAGES = [
-        'Harika iş! Bir görev daha pençelendi ve çizildi!',
-        'Süper ilerleme! TEKNOFEST yolunda tam gaz devam!',
-        'Görev tamam! Ekip hedeflerine bir adım daha yaklaştı!',
-        'Müthiş! Bu haftanın yükü bir kalemde silindi!',
-        'Eline sağlık! Bir engel daha başarıyla aşıldı!'
+    var STICKMAN_SPEECH_MESSAGES = [
+        'Çizdim gitti!',
+        'Bitti bile!',
+        'Harika iş!',
+        'Tam isabet!',
+        'Hedefe +1!'
     ];
-    var lastCatMsgIndex = -1;
-    var activeCatTimer = null;
-    var activeCatLeaveTimer = null;
+    var lastSpeechIndex = -1;
 
-    function pickCatMessage() {
-        if (CAT_CELEBRATION_MESSAGES.length <= 1) {
-            return CAT_CELEBRATION_MESSAGES[0] || '';
-        }
-        var idx = Math.floor(Math.random() * CAT_CELEBRATION_MESSAGES.length);
-        if (idx === lastCatMsgIndex) {
-            idx = (idx + 1) % CAT_CELEBRATION_MESSAGES.length;
-        }
-        lastCatMsgIndex = idx;
-        return CAT_CELEBRATION_MESSAGES[idx];
-    }
+    /* ----------------------------------------------------------------------
+       0. Ekranın En Tepesinde İnce Kobalt Yüklenme Çizgisi (#topProgressBar)
+       ---------------------------------------------------------------------- */
+    var topProgress = (function () {
+        var barEl = null;
+        var activeCount = 0;
+        var trickleTimer = null;
+        var hideTimer = null;
+        var resetTimer = null;
+        var navFallbackTimer = null;
+        var currentScale = 0;
 
-    function resolveScribbleHost(targetElement) {
-        if (!targetElement || typeof targetElement.closest !== 'function') {
-            return null;
+        function ensureBar() {
+            if (barEl && barEl.parentNode) {
+                return barEl;
+            }
+            barEl = document.getElementById('topProgressBar');
+            if (!barEl && document.body) {
+                barEl = document.createElement('div');
+                barEl.id = 'topProgressBar';
+                barEl.className = 'top-progress-bar';
+                barEl.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(barEl);
+            }
+            return barEl;
         }
-        var subItem = targetElement.closest('.subtask-item');
-        if (subItem) {
-            return subItem.querySelector('.subtask-title') || subItem;
-        }
-        var card = targetElement.closest('.task-card');
-        if (card) {
-            return card.querySelector('.task-card-title') || card;
-        }
-        var row = targetElement.closest('tr');
-        if (row) {
-            return row.querySelector('.task-title-link') || row.querySelector('td:first-child') || row;
-        }
-        if (targetElement.classList && (targetElement.classList.contains('subtask-title') || targetElement.classList.contains('task-card-title') || targetElement.classList.contains('task-title-link'))) {
-            return targetElement;
-        }
-        return document.querySelector('.page-title') || null;
-    }
 
-    function showTaskCatCelebration(targetElement) {
-        var host = resolveScribbleHost(targetElement);
-        if (host) {
-            var oldLines = host.querySelectorAll('.task-scribble-line');
-            oldLines.forEach(function (el) {
-                if (el.parentNode) {
-                    el.parentNode.removeChild(el);
-                }
-            });
-            host.classList.add('task-scribble-host');
-            var scribbleWrap = document.createElement('span');
-            scribbleWrap.setAttribute('aria-hidden', 'true');
-            scribbleWrap.innerHTML =
-                '<svg class="task-scribble-line" viewBox="0 0 220 18" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-                '<path d="M4 11 C 48 4, 92 15, 142 7 C 174 3, 198 13, 216 8" stroke="#2563EB" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
-                '<path d="M12 14 C 66 8, 128 14, 210 10" stroke="#059669" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.82"/>' +
-                '</svg>';
-            var scribbleSvg = scribbleWrap.firstChild;
-            if (scribbleSvg) {
-                host.appendChild(scribbleSvg);
-                window.setTimeout(function () {
-                    if (scribbleSvg.parentNode) {
-                        scribbleSvg.parentNode.removeChild(scribbleSvg);
-                    }
-                }, 2400);
+        function setScale(val) {
+            currentScale = val;
+            var el = ensureBar();
+            if (el) {
+                el.style.transform = 'scaleX(' + val + ')';
             }
         }
 
-        if (activeCatTimer) {
-            window.clearTimeout(activeCatTimer);
-            activeCatTimer = null;
-        }
-        if (activeCatLeaveTimer) {
-            window.clearTimeout(activeCatLeaveTimer);
-            activeCatLeaveTimer = null;
+        function start() {
+            var el = ensureBar();
+            if (!el) {
+                return;
+            }
+            activeCount++;
+            if (hideTimer) {
+                window.clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+            if (resetTimer) {
+                window.clearTimeout(resetTimer);
+                resetTimer = null;
+            }
+            if (trickleTimer) {
+                window.clearInterval(trickleTimer);
+                trickleTimer = null;
+            }
+
+            el.classList.add('is-active');
+            if (currentScale < 0.15 || currentScale >= 1) {
+                el.style.transition = 'none';
+                setScale(0.12);
+                void el.offsetWidth;
+                el.style.transition = '';
+            }
+            window.requestAnimationFrame(function () {
+                setScale(0.75);
+            });
+
+            trickleTimer = window.setInterval(function () {
+                if (currentScale < 0.9) {
+                    setScale(Math.min(0.9, currentScale + 0.03));
+                }
+            }, 350);
         }
 
-        var existing = document.querySelectorAll('.cat-celebration');
-        existing.forEach(function (node) {
+        function done(forceAll) {
+            if (forceAll) {
+                activeCount = 0;
+            } else if (activeCount > 0) {
+                activeCount--;
+            }
+            if (activeCount > 0) {
+                return;
+            }
+            if (trickleTimer) {
+                window.clearInterval(trickleTimer);
+                trickleTimer = null;
+            }
+            if (navFallbackTimer) {
+                window.clearTimeout(navFallbackTimer);
+                navFallbackTimer = null;
+            }
+            var el = ensureBar();
+            if (!el) {
+                return;
+            }
+            setScale(1);
+            hideTimer = window.setTimeout(function () {
+                el.classList.remove('is-active');
+                resetTimer = window.setTimeout(function () {
+                    if (!el.classList.contains('is-active')) {
+                        el.style.transition = 'none';
+                        setScale(0);
+                        void el.offsetWidth;
+                        el.style.transition = '';
+                    }
+                }, 220);
+            }, 170);
+        }
+
+        function triggerNavigation() {
+            start();
+            if (navFallbackTimer) {
+                window.clearTimeout(navFallbackTimer);
+            }
+            navFallbackTimer = window.setTimeout(function () {
+                done(true);
+            }, 2600);
+        }
+
+        ensureBar();
+
+        if (typeof window.fetch === 'function' && !window.fetch.__topProgressWrapped) {
+            var nativeFetch = window.fetch;
+            var wrappedFetch = function () {
+                start();
+                try {
+                    var p = nativeFetch.apply(this, arguments);
+                    if (p && typeof p.then === 'function') {
+                        p.then(
+                            function (res) {
+                                done(false);
+                                return res;
+                            },
+                            function (err) {
+                                done(false);
+                                throw err;
+                            }
+                        );
+                    } else {
+                        done(false);
+                    }
+                    return p;
+                } catch (syncErr) {
+                    done(false);
+                    throw syncErr;
+                }
+            };
+            wrappedFetch.__topProgressWrapped = true;
+            window.fetch = wrappedFetch;
+        }
+
+        return {
+            ensure: ensureBar,
+            start: start,
+            done: done,
+            triggerNavigation: triggerNavigation
+        };
+    })();
+
+    function initTopProgressBar() {
+        topProgress.ensure();
+
+        document.addEventListener('click', function (e) {
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                return;
+            }
+            var link = e.target && typeof e.target.closest === 'function' ? e.target.closest('a[href]') : null;
+            if (!link) {
+                return;
+            }
+            if (link.hasAttribute('download') || link.hasAttribute('data-print-report') || link.hasAttribute('data-modal-open')) {
+                return;
+            }
+            var targetAttr = (link.getAttribute('target') || '').toLowerCase();
+            if (targetAttr && targetAttr !== '_self') {
+                return;
+            }
+            var rawHref = (link.getAttribute('href') || '').trim();
+            if (!rawHref || rawHref.charAt(0) === '#' || /^(javascript|mailto|tel):/i.test(rawHref)) {
+                return;
+            }
+            try {
+                var dest = new URL(link.href, window.location.href);
+                if (dest.origin !== window.location.origin) {
+                    return;
+                }
+                if (dest.pathname === window.location.pathname && dest.search === window.location.search && dest.hash) {
+                    return;
+                }
+                topProgress.triggerNavigation();
+            } catch (err) {
+                // Geçersiz URL ise yoksay
+            }
+        });
+
+        document.addEventListener('submit', function (e) {
+            window.requestAnimationFrame(function () {
+                if (e.defaultPrevented) {
+                    return;
+                }
+                var form = e.target;
+                if (!form || form.tagName !== 'FORM') {
+                    return;
+                }
+                var methodAttr = (form.getAttribute('method') || '').toLowerCase();
+                var targetAttr = (form.getAttribute('target') || '').toLowerCase();
+                if (methodAttr === 'dialog' || (targetAttr && targetAttr !== '_self')) {
+                    return;
+                }
+                topProgress.triggerNavigation();
+            });
+        });
+
+        window.addEventListener('pageshow', function () {
+            topProgress.done(true);
+        });
+    }
+
+    /* ----------------------------------------------------------------------
+       0b. Görev Yazısının Üstünde Yürüyüp Çizen Çöp Adam (showTaskStickmanScribe)
+       ---------------------------------------------------------------------- */
+    function pickSpeechMessage() {
+        if (STICKMAN_SPEECH_MESSAGES.length <= 1) {
+            return STICKMAN_SPEECH_MESSAGES[0] || 'Çizdim gitti!';
+        }
+        var idx = Math.floor(Math.random() * STICKMAN_SPEECH_MESSAGES.length);
+        if (idx === lastSpeechIndex) {
+            idx = (idx + 1) % STICKMAN_SPEECH_MESSAGES.length;
+        }
+        lastSpeechIndex = idx;
+        return STICKMAN_SPEECH_MESSAGES[idx];
+    }
+
+    function resolveScribeHost(targetElement) {
+        if (targetElement && typeof targetElement.closest === 'function') {
+            if (targetElement.matches && targetElement.matches('.subtask-title, .task-title-link, .task-card-title, .page-title')) {
+                return targetElement;
+            }
+            var subItem = targetElement.closest('.subtask-item');
+            if (subItem) {
+                return subItem.querySelector('.subtask-title') || subItem;
+            }
+            var card = targetElement.closest('.task-card');
+            if (card) {
+                return card.querySelector('.task-card-title') || card;
+            }
+            var row = targetElement.closest('tr');
+            if (row) {
+                return row.querySelector('.task-title-link') || row.querySelector('strong') || row.querySelector('td:first-child') || row;
+            }
+            var deadlineItem = targetElement.closest('.deadline-item');
+            if (deadlineItem) {
+                return deadlineItem.querySelector('.deadline-title') || deadlineItem;
+            }
+        }
+        return document.querySelector('.page-title') || document.querySelector('strong') || null;
+    }
+
+    function cleanupHostScribe(host) {
+        if (!host) {
+            return;
+        }
+        if (host.__scribeTimers && host.__scribeTimers.length) {
+            host.__scribeTimers.forEach(function (t) {
+                window.clearTimeout(t);
+            });
+        }
+        host.__scribeTimers = [];
+        var oldStages = host.querySelectorAll('.stickman-scribe-stage');
+        oldStages.forEach(function (el) {
+            if (el.parentNode) {
+                el.parentNode.removeChild(el);
+            }
+        });
+        if (host.__scribeOverflowAncestors && host.__scribeOverflowAncestors.length) {
+            host.__scribeOverflowAncestors.forEach(function (anc) {
+                anc.classList.remove('has-active-scribe');
+            });
+            host.__scribeOverflowAncestors = [];
+        }
+        host.classList.remove('stickman-scribe-host');
+    }
+
+    function showTaskStickmanScribe(targetElement) {
+        var strayCats = document.querySelectorAll('.cat-celebration');
+        strayCats.forEach(function (node) {
             if (node.parentNode) {
                 node.parentNode.removeChild(node);
             }
         });
 
-        var msg = pickCatMessage();
-        var card = document.createElement('div');
-        card.className = 'cat-celebration';
-        card.setAttribute('role', 'status');
-        card.setAttribute('aria-live', 'polite');
-
-        card.innerHTML =
-            '<div class="cat-celebration-figure" aria-hidden="true">' +
-                '<svg class="cat-celebration-svg" viewBox="0 0 68 58" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-                    '<path d="M12 24 L15 9 L25 18 Q30 16 35 18 L45 9 L48 24 C50 32 47 42 30 42 C13 42 10 32 12 24 Z" fill="#FFFFFF" stroke="#1E3A8A" stroke-width="2" stroke-linejoin="round"/>' +
-                    '<path d="M16 13 L18 20 L23 18 Z" fill="#BFDBFE"/>' +
-                    '<path d="M44 13 L42 20 L37 18 Z" fill="#BFDBFE"/>' +
-                    '<circle cx="23" cy="26" r="2.2" fill="#0F172A"/>' +
-                    '<circle cx="37" cy="26" r="2.2" fill="#0F172A"/>' +
-                    '<circle cx="23.7" cy="25.3" r="0.7" fill="#FFFFFF"/>' +
-                    '<circle cx="37.7" cy="25.3" r="0.7" fill="#FFFFFF"/>' +
-                    '<polygon points="30,28.5 28,31 32,31" fill="#2563EB"/>' +
-                    '<path d="M26 33 Q30 36 34 33" stroke="#1E3A8A" stroke-width="1.8" stroke-linecap="round" fill="none"/>' +
-                    '<line x1="8" y1="27" x2="17" y2="28.5" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
-                    '<line x1="7" y1="31" x2="17" y2="31" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
-                    '<line x1="43" y1="28.5" x2="52" y2="27" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
-                    '<line x1="43" y1="31" x2="53" y2="31" stroke="#64748B" stroke-width="1.4" stroke-linecap="round"/>' +
-                    '<g class="cat-paw-group">' +
-                        '<ellipse cx="44" cy="39" rx="6.5" ry="4.5" transform="rotate(-18 44 39)" fill="#FFFFFF" stroke="#1E3A8A" stroke-width="1.8"/>' +
-                        '<circle cx="42" cy="37.5" r="1.2" fill="#93C5FD"/>' +
-                        '<circle cx="45" cy="36.8" r="1.2" fill="#93C5FD"/>' +
-                        '<circle cx="47.3" cy="38.2" r="1.2" fill="#93C5FD"/>' +
-                        '<path d="M46 41 L58 29 L61 32 L49 44 L45 45 Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="1.4" stroke-linejoin="round"/>' +
-                    '</g>' +
-                    '<path class="cat-paw-scribble" d="M8 50 C 20 45, 32 54, 46 47 C 54 44, 60 51, 65 47" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-                '</svg>' +
-            '</div>' +
-            '<div class="cat-celebration-bubble">' +
-                '<span class="cat-celebration-badge">✓ Görev Çizildi</span>' +
-                '<div class="cat-celebration-msg"></div>' +
-            '</div>';
-
-        var msgNode = card.querySelector('.cat-celebration-msg');
-        if (msgNode) {
-            msgNode.textContent = msg;
+        var host = resolveScribeHost(targetElement);
+        if (!host) {
+            return null;
         }
 
-        document.body.appendChild(card);
+        cleanupHostScribe(host);
+        host.classList.add('stickman-scribe-host');
 
-        activeCatLeaveTimer = window.setTimeout(function () {
-            if (card && card.classList) {
-                card.classList.add('is-leaving');
+        var ancestors = [];
+        ['.subtask-item', '.week-group', 'tr'].forEach(function (sel) {
+            var anc = host.closest ? host.closest(sel) : null;
+            if (anc) {
+                anc.classList.add('has-active-scribe');
+                ancestors.push(anc);
             }
-        }, 2180);
+        });
+        host.__scribeOverflowAncestors = ancestors;
 
-        activeCatTimer = window.setTimeout(function () {
-            if (card && card.parentNode) {
-                card.parentNode.removeChild(card);
+        var stage = document.createElement('span');
+        stage.className = 'stickman-scribe-stage';
+        stage.setAttribute('aria-hidden', 'true');
+
+        var speechText = pickSpeechMessage();
+        stage.innerHTML =
+            '<svg class="stickman-scribble-stroke" viewBox="0 0 240 14" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<path class="stickman-scribble-path-main" pathLength="100" d="M1 8 C 44 3, 92 12, 144 6 C 184 3, 214 11, 239 7" stroke="#2563EB" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<path class="stickman-scribble-path-accent" pathLength="100" d="M6 10.5 C 72 6.5, 152 11, 236 8.5" stroke="#059669" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.82"/>' +
+            '</svg>' +
+            '<svg class="stickman-scribe-actor" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<g class="stickman-pose-draw">' +
+                    '<circle cx="11.5" cy="6" r="3.4" fill="#FFFFFF" stroke="#1E3A8A" stroke-width="1.9"/>' +
+                    '<line x1="11.5" y1="9.5" x2="10.6" y2="17.5" stroke="#1E3A8A" stroke-width="1.9" stroke-linecap="round"/>' +
+                    '<line x1="11.2" y1="11.8" x2="6.6" y2="15" stroke="#1E3A8A" stroke-width="1.7" stroke-linecap="round"/>' +
+                    '<line class="stickman-leg-a" x1="10.6" y1="17.5" x2="7.2" y2="23.6" stroke="#1E3A8A" stroke-width="1.85" stroke-linecap="round"/>' +
+                    '<line class="stickman-leg-b" x1="10.6" y1="17.5" x2="14.4" y2="23.6" stroke="#1E3A8A" stroke-width="1.85" stroke-linecap="round"/>' +
+                    '<g class="stickman-arm-pencil">' +
+                        '<line x1="11.4" y1="11.8" x2="17.2" y2="15.2" stroke="#1E3A8A" stroke-width="1.85" stroke-linecap="round"/>' +
+                        '<path d="M15.6 12.6 L18 11.4 L22 19.8 L19.6 21 Z" fill="#2563EB" stroke="#1E3A8A" stroke-width="1.15" stroke-linejoin="round"/>' +
+                        '<polygon points="19.6,21 22,19.8 21.6,22.8" fill="#059669"/>' +
+                    '</g>' +
+                '</g>' +
+                '<g class="stickman-pose-cheer">' +
+                    '<circle cx="13" cy="6" r="3.4" fill="#FFFFFF" stroke="#059669" stroke-width="1.9"/>' +
+                    '<line x1="13" y1="9.5" x2="13" y2="17.6" stroke="#059669" stroke-width="1.9" stroke-linecap="round"/>' +
+                    '<line x1="13" y1="12" x2="7.6" y2="6.6" stroke="#059669" stroke-width="1.9" stroke-linecap="round"/>' +
+                    '<line x1="13" y1="12" x2="18.6" y2="6.6" stroke="#059669" stroke-width="1.9" stroke-linecap="round"/>' +
+                    '<line x1="17.8" y1="7.6" x2="22.4" y2="2.8" stroke="#2563EB" stroke-width="2.1" stroke-linecap="round"/>' +
+                    '<line x1="13" y1="17.6" x2="9.4" y2="23.6" stroke="#059669" stroke-width="1.85" stroke-linecap="round"/>' +
+                    '<line x1="13" y1="17.6" x2="16.6" y2="23.6" stroke="#059669" stroke-width="1.85" stroke-linecap="round"/>' +
+                '</g>' +
+            '</svg>' +
+            '<span class="stickman-speech"></span>';
+
+        var speechEl = stage.querySelector('.stickman-speech');
+        if (speechEl) {
+            speechEl.textContent = speechText;
+        }
+
+        host.appendChild(stage);
+
+        if (speechEl && typeof host.getBoundingClientRect === 'function') {
+            var rect = host.getBoundingClientRect();
+            var vw = window.innerWidth || document.documentElement.clientWidth || 360;
+            if (rect.right > vw - 108 || rect.width >= 96) {
+                speechEl.classList.add('align-right');
+            } else if (rect.left < 96) {
+                speechEl.classList.add('align-left');
+            } else {
+                speechEl.classList.add('align-right');
             }
-        }, 2420);
+        }
 
-        return card;
+        var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var cheerDelay = reducedMotion ? 20 : 850;
+        var fadeDelay = cheerDelay + 1100;
+        var removeDelay = fadeDelay + 240;
+
+        var t1 = window.setTimeout(function () {
+            if (stage && stage.classList) {
+                stage.classList.add('is-cheering');
+            }
+        }, cheerDelay);
+
+        var t2 = window.setTimeout(function () {
+            if (stage && stage.classList) {
+                stage.classList.add('is-fading');
+            }
+        }, fadeDelay);
+
+        var t3 = window.setTimeout(function () {
+            cleanupHostScribe(host);
+        }, removeDelay);
+
+        host.__scribeTimers = [t1, t2, t3];
+        return stage;
     }
 
-    window.showTaskCatCelebration = showTaskCatCelebration;
+    window.showTaskStickmanScribe = showTaskStickmanScribe;
+    window.showTaskCatCelebration = showTaskStickmanScribe;
+
+    /* ----------------------------------------------------------------------
+       0c. Genel Bakış (panel.php) 0.6sn Canlı Sayaçlar & Donut Halkası
+       ---------------------------------------------------------------------- */
+    function initDashboardCountersAndDonut() {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        var counterNodes = [];
+        var seen = [];
+        var candidates = document.querySelectorAll('.stat-card .stat-value, .donut-percent, [data-count-target]');
+        candidates.forEach(function (el) {
+            if (seen.indexOf(el) !== -1) {
+                return;
+            }
+            seen.push(el);
+            var raw = el.getAttribute('data-count-target');
+            var text = (el.textContent || '').trim();
+            var match = text.match(/^([^\d-]*)(-?\d+)(.*)$/);
+            var targetVal = raw !== null && raw !== '' ? parseInt(raw, 10) : (match ? parseInt(match[2], 10) : NaN);
+            if (isNaN(targetVal) || targetVal < 0) {
+                return;
+            }
+            var prefix = match ? match[1] : (text.indexOf('%') === 0 ? '%' : '');
+            var suffix = match ? match[3] : '';
+            counterNodes.push({
+                el: el,
+                target: targetVal,
+                prefix: prefix,
+                suffix: suffix,
+                finalText: text || (prefix + targetVal + suffix)
+            });
+        });
+
+        var donutCircles = [];
+        var ringSelector = 'circle.donut-fill, circle.donut-progress, .donut-ring-fill, .donut-svg circle[stroke-dasharray]';
+        document.querySelectorAll(ringSelector).forEach(function (circle) {
+            var dashArray = parseFloat(circle.getAttribute('stroke-dasharray'));
+            var targetOffset = parseFloat(circle.getAttribute('stroke-dashoffset'));
+            if (!isNaN(dashArray) && dashArray > 0 && !isNaN(targetOffset)) {
+                circle.style.transition = 'none';
+                circle.style.strokeDashoffset = String(dashArray);
+                donutCircles.push({
+                    el: circle,
+                    circumference: dashArray,
+                    targetOffset: targetOffset
+                });
+            }
+        });
+
+        if (!counterNodes.length && !donutCircles.length) {
+            return;
+        }
+
+        counterNodes.forEach(function (item) {
+            item.el.textContent = item.prefix + '0' + item.suffix;
+        });
+
+        var duration = 600;
+        var startTime = null;
+
+        function step(timestamp) {
+            if (startTime === null) {
+                startTime = timestamp;
+            }
+            var elapsed = timestamp - startTime;
+            var progress = Math.min(1, Math.max(0, elapsed / duration));
+            var eased = 1 - Math.pow(1 - progress, 3);
+
+            counterNodes.forEach(function (item) {
+                if (progress >= 1) {
+                    item.el.textContent = item.finalText;
+                } else {
+                    var current = Math.round(item.target * eased);
+                    item.el.textContent = item.prefix + String(current) + item.suffix;
+                }
+            });
+
+            donutCircles.forEach(function (ring) {
+                var offsetNow = ring.circumference + (ring.targetOffset - ring.circumference) * eased;
+                ring.el.style.strokeDashoffset = offsetNow.toFixed(2);
+                if (progress >= 1) {
+                    ring.el.style.transition = '';
+                }
+            });
+
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        }
+
+        window.requestAnimationFrame(step);
+    }
 
     function applyStatusClass(el, status) {
         if (!el) {
@@ -433,7 +775,7 @@
                         }
 
                         if (newStatus === 'tamamlandi') {
-                            showTaskCatCelebration(card || filterRow || select);
+                            showTaskStickmanScribe(card || filterRow || select);
                         }
 
                         showToast('Görev durumu güncellendi.', 'success');
@@ -1501,7 +1843,7 @@
                         syncTaskStatusUI(result.data.gorev_durum);
                     }
                     if (checked === 1) {
-                        showTaskCatCelebration(row || cb);
+                        showTaskStickmanScribe(row || cb);
                     }
                 })
                 .catch(function (err) {
@@ -1644,6 +1986,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        initTopProgressBar();
+        initDashboardCountersAndDonut();
         initSideDrawer();
         initModals();
         initTaskStatusSelects();

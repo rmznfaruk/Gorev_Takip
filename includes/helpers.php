@@ -174,6 +174,145 @@ function avatar_renk_sinifi($metin)
     return 'avatar-tone-' . $ton;
 }
 
+function oda_renk_sinifi($anahtar)
+{
+    $temiz = trim((string) $anahtar);
+    if ($temiz === '') {
+        return 'room-accent-1';
+    }
+    $kucuk = function_exists('mb_strtolower')
+        ? mb_strtolower($temiz, 'UTF-8')
+        : strtolower($temiz);
+    $hash = (int) sprintf('%u', crc32($kucuk));
+    $ton = ($hash % 6) + 1;
+    return 'room-accent-' . $ton;
+}
+
+function gorev_aciliyet_bilgisi($son_tarih, $tamamlandi_mi = false)
+{
+    $tamam = ($tamamlandi_mi === true || $tamamlandi_mi === 1 || $tamamlandi_mi === '1' || $tamamlandi_mi === 'tamamlandi');
+    if ($tamam) {
+        return array(
+            'sinif' => 'urgency-done',
+            'mod' => 'done',
+            'pulse' => false,
+            'etiket' => 'Tamamlandı',
+            'gun' => null,
+        );
+    }
+
+    $ham = ($son_tarih === null || is_bool($son_tarih)) ? '' : trim((string) $son_tarih);
+    if ($ham === '' || $ham === '0' || strpos($ham, '0000-00-00') === 0) {
+        return array(
+            'sinif' => 'urgency-calm',
+            'mod' => 'calm',
+            'pulse' => false,
+            'etiket' => 'Tarihsiz',
+            'gun' => null,
+        );
+    }
+
+    $tarih_str = substr($ham, 0, 10);
+    $hedef_ts = strtotime($tarih_str . ' 00:00:00');
+    $bugun_ts = strtotime(date('Y-m-d') . ' 00:00:00');
+    if ($hedef_ts === false || $bugun_ts === false) {
+        return array(
+            'sinif' => 'urgency-calm',
+            'mod' => 'calm',
+            'pulse' => false,
+            'etiket' => 'Tarihsiz',
+            'gun' => null,
+        );
+    }
+
+    $gun = (int) round(($hedef_ts - $bugun_ts) / 86400);
+
+    if ($gun <= 0) {
+        $etiket = $gun < 0 ? (abs($gun) . ' gün gecikti') : 'Bugün son gün';
+        return array(
+            'sinif' => 'urgency-overdue',
+            'mod' => 'panic',
+            'pulse' => true,
+            'etiket' => $etiket,
+            'gun' => $gun,
+        );
+    }
+    if ($gun >= 1 && $gun <= 3) {
+        $etiket = $gun === 1 ? 'Yarın' : ($gun . ' gün kaldı');
+        return array(
+            'sinif' => 'urgency-soon',
+            'mod' => 'rush',
+            'pulse' => false,
+            'etiket' => $etiket,
+            'gun' => $gun,
+        );
+    }
+    if ($gun >= 4 && $gun <= 7) {
+        return array(
+            'sinif' => 'urgency-active',
+            'mod' => 'walk',
+            'pulse' => false,
+            'etiket' => $gun . ' gün kaldı',
+            'gun' => $gun,
+        );
+    }
+
+    return array(
+        'sinif' => 'urgency-calm',
+        'mod' => 'chill',
+        'pulse' => false,
+        'etiket' => $gun . ' gün kaldı',
+        'gun' => $gun,
+    );
+}
+
+function stickman_durum_ikonu($mod)
+{
+    $anahtar = is_string($mod) ? trim($mod) : 'chill';
+    if ($anahtar === 'panic') {
+        return '<svg class="stickman-status-icon stickman-panic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1.2" x2="12" y2="2.8"></line><line x1="7.8" y1="2.2" x2="9" y2="3.5"></line><line x1="16.2" y1="2.2" x2="15" y2="3.5"></line><circle cx="12" cy="6.6" r="2.2"></circle><polyline points="12 10.6 7.2 8.4 9.5 5.8"></polyline><polyline points="12 10.6 16.8 8.4 14.5 5.8"></polyline><line x1="12" y1="8.9" x2="12" y2="15.2"></line><polyline points="12 15.2 8.5 18.2 9.2 21.5"></polyline><polyline points="12 15.2 15.5 18.2 14.8 21.5"></polyline></svg>';
+    }
+    if ($anahtar === 'rush') {
+        return '<svg class="stickman-status-icon stickman-rush" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1.8" y1="8.5" x2="5.8" y2="8.5"></line><line x1="1.2" y1="12.5" x2="4.8" y2="12.5"></line><circle cx="16.2" cy="5.2" r="2.2"></circle><line x1="15" y1="7.2" x2="10.8" y2="13.8"></line><polyline points="13.6 9.4 18.2 11.2 19.8 9.2"></polyline><polyline points="13.6 9.4 9.2 8.2 7.6 10.4"></polyline><polyline points="10.8 13.8 15.8 15.6 14.8 20.8"></polyline><polyline points="10.8 13.8 6.8 17.5 4.2 16.5"></polyline></svg>';
+    }
+    if ($anahtar === 'walk') {
+        return '<svg class="stickman-status-icon stickman-walk" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12.5" cy="4.8" r="2.3"></circle><line x1="12.2" y1="7.2" x2="11.5" y2="14.2"></line><polyline points="12 9.2 16.2 11.8 17.8 10.4"></polyline><polyline points="12 9.2 8.2 12.2 6.8 13.8"></polyline><polyline points="11.5 14.2 15.2 18 16.5 21.2"></polyline><polyline points="11.5 14.2 8.4 18 7.2 21.2"></polyline></svg>';
+    }
+    if ($anahtar === 'done') {
+        return '<svg class="stickman-status-icon stickman-done" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5.8" r="2.3"></circle><line x1="12" y1="9.8" x2="6.8" y2="4.2"></line><line x1="12" y1="9.8" x2="17.2" y2="4.2"></line><line x1="12" y1="8.2" x2="12" y2="15"></line><line x1="12" y1="15" x2="8.4" y2="21.2"></line><line x1="12" y1="15" x2="15.6" y2="21.2"></line></svg>';
+    }
+    return '<svg class="stickman-status-icon stickman-chill" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="5.2" r="2.3"></circle><polyline points="10.8 4.8 7.6 6.6 11.8 9.2"></polyline><polyline points="15.2 5.2 18.2 7.2 12.6 9.4"></polyline><line x1="12.2" y1="7.6" x2="10.2" y2="14.4"></line><line x1="10.2" y1="14.4" x2="6.8" y2="21"></line><polyline points="10.2 14.4 14.8 17.4 13.2 21"></polyline></svg>';
+}
+
+function son_tarih_aciliyet_html($son_tarih, $tamamlandi_mi = false)
+{
+    $ham = ($son_tarih === null || is_bool($son_tarih)) ? '' : trim((string) $son_tarih);
+    if ($ham === '' || $ham === '0' || strpos($ham, '0000-00-00') === 0) {
+        return '<span class="date-muted">-</span>';
+    }
+    $aciliyet = gorev_aciliyet_bilgisi($ham, $tamamlandi_mi);
+    $html = '<span class="deadline-inline" title="' . e($aciliyet['etiket']) . '">';
+    if (!empty($aciliyet['pulse'])) {
+        $html .= '<span class="urgency-pulse-dot" aria-hidden="true"></span>';
+    }
+    $html .= stickman_durum_ikonu($aciliyet['mod']);
+    $html .= '<span class="date-muted">' . e(tarih_format($ham)) . '</span>';
+    $html .= '</span>';
+    return $html;
+}
+
+function kisa_hafta_etiketi($hafta_etiketi)
+{
+    $temiz = trim((string) $hafta_etiketi);
+    if ($temiz === '') {
+        return 'H1';
+    }
+    if (preg_match('/^Hafta\s*(\d+)$/iu', $temiz, $eslesme)) {
+        return 'H' . (int) $eslesme[1];
+    }
+    return metin_kisalt($temiz, 10);
+}
+
 function yonlendir($url)
 {
     header('Location: ' . $url);
