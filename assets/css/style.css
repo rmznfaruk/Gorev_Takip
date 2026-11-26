@@ -7099,3 +7099,194 @@ html[data-theme="dark"] .stickman-speech {
         color: #0F172A !important;
     }
 }
+
+/* ==========================================================================
+   Dairesel Tema Geçişi (View Transition) ve %100 Kutlama Efektleri
+   ========================================================================== */
+
+html.theme-transitioning::view-transition-image-pair(root) {
+    isolation: isolate;
+}
+
+html.theme-transitioning::view-transition-old(root),
+html.theme-transitioning::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+html.theme-transitioning::view-transition-old(root) {
+    z-index: 1;
+}
+
+html.theme-transitioning::view-transition-new(root) {
+    z-index: 2;
+}
+
+.celebration-confetti-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+@keyframes progress-celebrate-shimmer {
+    0% {
+        transform: translateX(-140%) skewX(-22deg);
+        opacity: 0;
+    }
+    18% {
+        opacity: 1;
+    }
+    82% {
+        opacity: 0.95;
+    }
+    100% {
+        transform: translateX(240%) skewX(-22deg);
+        opacity: 0;
+    }
+}
+
+@keyframes progress-celebrate-glow-light {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+    35% {
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22), 0 0 12px rgba(5, 150, 105, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes progress-celebrate-glow-dark {
+    0% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+    }
+    35% {
+        box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.28), 0 0 14px rgba(16, 185, 129, 0.44);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+    }
+}
+
+.progress-fill.is-celebrate-shimmer,
+.inline-progress-fill.is-celebrate-shimmer,
+.task-card-progress-fill.is-celebrate-shimmer,
+.progress-bar.is-celebrate-shimmer,
+.inline-progress-bar.is-celebrate-shimmer,
+.task-card-progress-bar.is-celebrate-shimmer,
+.compact-pct-chip.is-celebrate-shimmer,
+.is-celebrate-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill.is-celebrate-shimmer::after,
+.inline-progress-fill.is-celebrate-shimmer::after,
+.task-card-progress-fill.is-celebrate-shimmer::after,
+.progress-bar.is-celebrate-shimmer::after,
+.inline-progress-bar.is-celebrate-shimmer::after,
+.task-card-progress-bar.is-celebrate-shimmer::after,
+.compact-pct-chip.is-celebrate-shimmer::after,
+.is-celebrate-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 56%;
+    pointer-events: none;
+    background: linear-gradient(
+        105deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.26) 30%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(167, 243, 208, 0.5) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-140%) skewX(-22deg);
+    animation: progress-celebrate-shimmer 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+html[data-theme="dark"] .progress-fill.is-celebrate-shimmer::after,
+html[data-theme="dark"] .inline-progress-fill.is-celebrate-shimmer::after,
+html[data-theme="dark"] .task-card-progress-fill.is-celebrate-shimmer::after,
+html[data-theme="dark"] .progress-bar.is-celebrate-shimmer::after,
+html[data-theme="dark"] .inline-progress-bar.is-celebrate-shimmer::after,
+html[data-theme="dark"] .task-card-progress-bar.is-celebrate-shimmer::after,
+html[data-theme="dark"] .compact-pct-chip.is-celebrate-shimmer::after,
+html[data-theme="dark"] .is-celebrate-shimmer::after {
+    background: linear-gradient(
+        105deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(110, 231, 183, 0.32) 28%,
+        rgba(255, 255, 255, 0.92) 50%,
+        rgba(147, 197, 253, 0.45) 72%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.progress-bar.is-celebrate-shimmer:has(> .is-celebrate-shimmer)::after,
+.inline-progress-bar.is-celebrate-shimmer:has(> .is-celebrate-shimmer)::after,
+.task-card-progress-bar.is-celebrate-shimmer:has(> .is-celebrate-shimmer)::after {
+    content: none;
+    display: none;
+}
+
+.progress-bar.is-celebrate-shimmer,
+.inline-progress-bar.is-celebrate-shimmer,
+.task-card-progress-bar.is-celebrate-shimmer,
+.progress-bar:has(> .is-celebrate-shimmer),
+.inline-progress-bar:has(> .is-celebrate-shimmer),
+.task-card-progress-bar:has(> .is-celebrate-shimmer),
+.compact-pct-chip.is-celebrate-shimmer {
+    animation: progress-celebrate-glow-light 1.15s ease-out forwards;
+}
+
+html[data-theme="dark"] .progress-bar.is-celebrate-shimmer,
+html[data-theme="dark"] .inline-progress-bar.is-celebrate-shimmer,
+html[data-theme="dark"] .task-card-progress-bar.is-celebrate-shimmer,
+html[data-theme="dark"] .progress-bar:has(> .is-celebrate-shimmer),
+html[data-theme="dark"] .inline-progress-bar:has(> .is-celebrate-shimmer),
+html[data-theme="dark"] .task-card-progress-bar:has(> .is-celebrate-shimmer),
+html[data-theme="dark"] .compact-pct-chip.is-celebrate-shimmer {
+    animation: progress-celebrate-glow-dark 1.15s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .celebration-confetti-canvas {
+        display: none !important;
+    }
+
+    .progress-bar.is-celebrate-shimmer,
+    .inline-progress-bar.is-celebrate-shimmer,
+    .task-card-progress-bar.is-celebrate-shimmer,
+    .progress-bar:has(> .is-celebrate-shimmer),
+    .inline-progress-bar:has(> .is-celebrate-shimmer),
+    .task-card-progress-bar:has(> .is-celebrate-shimmer),
+    .compact-pct-chip.is-celebrate-shimmer,
+    .is-celebrate-shimmer {
+        animation: none !important;
+    }
+
+    .progress-fill.is-celebrate-shimmer::after,
+    .inline-progress-fill.is-celebrate-shimmer::after,
+    .task-card-progress-fill.is-celebrate-shimmer::after,
+    .progress-bar.is-celebrate-shimmer::after,
+    .inline-progress-bar.is-celebrate-shimmer::after,
+    .task-card-progress-bar.is-celebrate-shimmer::after,
+    .compact-pct-chip.is-celebrate-shimmer::after,
+    .is-celebrate-shimmer::after {
+        animation: none !important;
+        display: none !important;
+        opacity: 0 !important;
+    }
+}
+
+@media print {
+    .celebration-confetti-canvas,
+    .is-celebrate-shimmer::after {
+        display: none !important;
+    }
+}

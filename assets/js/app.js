@@ -252,6 +252,10 @@
        ---------------------------------------------------------------------- */
     var THEME_STORAGE_KEY = 'gt_theme';
 
+    function prefersReducedMotion() {
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
     function isDarkThemeActive() {
         return document.documentElement.getAttribute('data-theme') === 'dark';
     }
@@ -314,7 +318,72 @@
             }
             e.preventDefault();
             var nextTheme = isDarkThemeActive() ? 'light' : 'dark';
-            applyTheme(nextTheme, true);
+
+            var vw = window.innerWidth || document.documentElement.clientWidth || 1280;
+            var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+            var x = vw - 40;
+            var y = 30;
+            if (typeof btn.getBoundingClientRect === 'function') {
+                var rect = btn.getBoundingClientRect();
+                if (rect && (rect.width > 0 || rect.height > 0)) {
+                    x = rect.left + rect.width / 2;
+                    y = rect.top + rect.height / 2;
+                }
+            }
+            var maxDx = Math.max(x, vw - x);
+            var maxDy = Math.max(y, vh - y);
+            var endRadius = typeof Math.hypot === 'function'
+                ? Math.hypot(maxDx, maxDy)
+                : Math.sqrt(maxDx * maxDx + maxDy * maxDy);
+
+            if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) {
+                var rootEl = document.documentElement;
+                var cleanupTransition = function () {
+                    if (rootEl && rootEl.classList) {
+                        rootEl.classList.remove('theme-transitioning');
+                    }
+                };
+                try {
+                    rootEl.classList.add('theme-transitioning');
+                    var transition = document.startViewTransition(function () {
+                        applyTheme(nextTheme);
+                        writeStoredTheme(nextTheme);
+                    });
+                    if (transition && transition.ready && typeof transition.ready.then === 'function') {
+                        transition.ready.then(function () {
+                            if (typeof rootEl.animate === 'function') {
+                                rootEl.animate(
+                                    {
+                                        clipPath: [
+                                            'circle(0px at ' + x + 'px ' + y + 'px)',
+                                            'circle(' + endRadius + 'px at ' + x + 'px ' + y + 'px)'
+                                        ]
+                                    },
+                                    {
+                                        duration: 480,
+                                        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                                        pseudoElement: '::view-transition-new(root)'
+                                    }
+                                );
+                            }
+                        }).catch(function () {
+                            // Gorunum gecisi iptal edilirse sessizce devam et
+                        });
+                    }
+                    if (transition && transition.finished && typeof transition.finished.then === 'function') {
+                        transition.finished.then(cleanupTransition, cleanupTransition);
+                    } else {
+                        cleanupTransition();
+                    }
+                } catch (err) {
+                    cleanupTransition();
+                    applyTheme(nextTheme);
+                    writeStoredTheme(nextTheme);
+                }
+            } else {
+                applyTheme(nextTheme);
+                writeStoredTheme(nextTheme);
+            }
         });
 
         window.addEventListener('storage', function (e) {
@@ -508,6 +577,243 @@
 
     window.showTaskStickmanScribe = showTaskStickmanScribe;
     window.showTaskCatCelebration = showTaskStickmanScribe;
+
+    /* ----------------------------------------------------------------------
+       0b2. %100 Görev / Haftalık Plan Kutlaması (triggerCelebration)
+       ---------------------------------------------------------------------- */
+    var CELEBRATION_COLORS = [
+        '#2563EB',
+        '#60A5FA',
+        '#10B981',
+        '#34D399',
+        '#F59E0B',
+        '#38BDF8',
+        '#A78BFA'
+    ];
+
+    function collectUniqueElements(input) {
+        var out = [];
+        if (!input) {
+            return out;
+        }
+        var addOne = function (node) {
+            if (node && node.classList && out.indexOf(node) === -1) {
+                out.push(node);
+            }
+        };
+        if (input.classList) {
+            addOne(input);
+        } else if (typeof input.length === 'number') {
+            for (var i = 0; i < input.length; i++) {
+                addOne(input[i]);
+            }
+        }
+        return out;
+    }
+
+    function readDetailProgressPct() {
+        var bar = document.querySelector('[data-progress-bar]');
+        if (bar && bar.style && bar.style.width) {
+            var w = parseFloat(bar.style.width);
+            if (!isNaN(w)) {
+                return w;
+            }
+        }
+        var textEl = document.querySelector('[data-progress-text]');
+        if (textEl && textEl.textContent) {
+            var parsed = parseInt(textEl.textContent.replace(/[^\d-]/g, ''), 10);
+            if (!isNaN(parsed)) {
+                return parsed;
+            }
+        }
+        return 0;
+    }
+
+    function triggerCelebration(originEl, progressEls) {
+        if (prefersReducedMotion()) {
+            return;
+        }
+
+        var shimmerTargets = collectUniqueElements(progressEls);
+        shimmerTargets.forEach(function (el) {
+            if (el.__celebrateShimmerTimer) {
+                window.clearTimeout(el.__celebrateShimmerTimer);
+                el.__celebrateShimmerTimer = null;
+                el.classList.remove('is-celebrate-shimmer');
+                void el.offsetWidth;
+            }
+            el.classList.add('is-celebrate-shimmer');
+            el.__celebrateShimmerTimer = window.setTimeout(function () {
+                el.classList.remove('is-celebrate-shimmer');
+                el.__celebrateShimmerTimer = null;
+            }, 1300);
+        });
+
+        if (!document.body || typeof document.createElement !== 'function') {
+            return;
+        }
+
+        var vw = window.innerWidth || document.documentElement.clientWidth || 1280;
+        var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+        var originX = vw * 0.5;
+        var originY = vh * 0.38;
+        var resolvedOrigin = false;
+
+        if (originEl && typeof originEl.getBoundingClientRect === 'function') {
+            var oRect = originEl.getBoundingClientRect();
+            if (oRect && (oRect.width > 0 || oRect.height > 0)) {
+                originX = oRect.left + oRect.width / 2;
+                originY = oRect.top + oRect.height / 2;
+                resolvedOrigin = true;
+            }
+        }
+        if (!resolvedOrigin && shimmerTargets.length) {
+            for (var sIdx = 0; sIdx < shimmerTargets.length; sIdx++) {
+                if (typeof shimmerTargets[sIdx].getBoundingClientRect === 'function') {
+                    var sRect = shimmerTargets[sIdx].getBoundingClientRect();
+                    if (sRect && (sRect.width > 0 || sRect.height > 0)) {
+                        originX = sRect.left + sRect.width / 2;
+                        originY = sRect.top + sRect.height / 2;
+                        break;
+                    }
+                }
+            }
+        }
+
+        var canvas = document.createElement('canvas');
+        canvas.className = 'celebration-confetti-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        if (canvas.style) {
+            canvas.style.position = 'fixed';
+            canvas.style.inset = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '9999';
+        }
+        document.body.appendChild(canvas);
+
+        var cleanedUp = false;
+        var rafId = null;
+        var fallbackTimer = null;
+
+        function cleanupCanvas() {
+            if (cleanedUp) {
+                return;
+            }
+            cleanedUp = true;
+            if (rafId !== null && typeof window.cancelAnimationFrame === 'function') {
+                window.cancelAnimationFrame(rafId);
+            }
+            if (fallbackTimer !== null) {
+                window.clearTimeout(fallbackTimer);
+            }
+            if (canvas.parentNode) {
+                canvas.parentNode.removeChild(canvas);
+            }
+        }
+
+        var ctx = typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
+        if (!ctx) {
+            fallbackTimer = window.setTimeout(cleanupCanvas, 60);
+            return;
+        }
+
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.max(1, Math.floor(vw * dpr));
+        canvas.height = Math.max(1, Math.floor(vh * dpr));
+        ctx.scale(dpr, dpr);
+
+        var particleCount = 42;
+        var particles = [];
+        for (var i = 0; i < particleCount; i++) {
+            var spread = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.35;
+            var speed = 185 + Math.random() * 275;
+            var shapeRoll = i % 5;
+            particles.push({
+                x: originX + (Math.random() - 0.5) * 14,
+                y: originY + (Math.random() - 0.5) * 8,
+                vx: Math.cos(spread) * speed,
+                vy: Math.sin(spread) * speed - 55,
+                w: shapeRoll === 0 ? 5.2 : 6.4 + Math.random() * 3.2,
+                h: shapeRoll === 0 ? 5.2 : 3.4 + Math.random() * 2.2,
+                radius: 2.6 + Math.random() * 1.4,
+                isCircle: shapeRoll === 4,
+                color: CELEBRATION_COLORS[i % CELEBRATION_COLORS.length],
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 11,
+                tilt: Math.random() * Math.PI * 2,
+                tiltSpeed: 4 + Math.random() * 6,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 5 + Math.random() * 5
+            });
+        }
+
+        var totalDuration = 1250;
+        var startTs = null;
+        var prevTs = null;
+
+        fallbackTimer = window.setTimeout(cleanupCanvas, totalDuration + 220);
+
+        function renderFrame(ts) {
+            if (cleanedUp) {
+                return;
+            }
+            if (startTs === null) {
+                startTs = ts;
+                prevTs = ts;
+            }
+            var elapsed = ts - startTs;
+            var dt = Math.min(0.05, Math.max(0.001, (ts - prevTs) / 1000));
+            prevTs = ts;
+
+            if (elapsed >= totalDuration) {
+                cleanupCanvas();
+                return;
+            }
+
+            var progress = elapsed / totalDuration;
+            var alpha = progress < 0.62 ? 1 : Math.max(0, 1 - (progress - 0.62) / 0.38);
+            var drag = Math.pow(0.955, dt * 60);
+            var gravity = 690;
+
+            ctx.clearRect(0, 0, vw, vh);
+
+            for (var pIdx = 0; pIdx < particles.length; pIdx++) {
+                var p = particles[pIdx];
+                p.vx *= drag;
+                p.vy = p.vy * drag + gravity * dt;
+                p.wobble += p.wobbleSpeed * dt;
+                p.x += p.vx * dt + Math.sin(p.wobble) * 16 * dt;
+                p.y += p.vy * dt;
+                p.rotation += p.rotSpeed * dt;
+                p.tilt += p.tiltSpeed * dt;
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.fillStyle = p.color;
+
+                if (p.isCircle) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    var flipScale = Math.max(0.22, Math.abs(Math.cos(p.tilt)));
+                    ctx.scale(1, flipScale);
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                }
+                ctx.restore();
+            }
+
+            rafId = window.requestAnimationFrame(renderFrame);
+        }
+
+        rafId = window.requestAnimationFrame(renderFrame);
+    }
+
+    window.triggerCelebration = triggerCelebration;
 
     /* ----------------------------------------------------------------------
        0c. Genel Bakış (panel.php) 0.6sn Canlı Sayaçlar & Donut Halkası
@@ -963,6 +1269,33 @@
 
                         if (newStatus === 'tamamlandi') {
                             showTaskStickmanScribe(triggerCard || filterRow || select);
+                            if (prevStatus !== 'tamamlandi') {
+                                var taskProgressEls = [];
+                                if (kanbanCard) {
+                                    var kFill = kanbanCard.querySelector('.task-card-progress-fill');
+                                    if (kFill) {
+                                        taskProgressEls.push(kFill);
+                                    }
+                                }
+                                document.querySelectorAll('[data-card-pct="' + taskId + '"]').forEach(function (chipEl) {
+                                    taskProgressEls.push(chipEl);
+                                });
+                                if (allTaskSelects && allTaskSelects.length) {
+                                    allTaskSelects.forEach(function (sEl) {
+                                        var rEl = sEl.closest('tr');
+                                        if (rEl) {
+                                            var rFill = rEl.querySelector('.inline-progress-fill');
+                                            if (rFill) {
+                                                taskProgressEls.push(rFill);
+                                            }
+                                        }
+                                    });
+                                }
+                                document.querySelectorAll('[data-progress-bar]').forEach(function (pbEl) {
+                                    taskProgressEls.push(pbEl);
+                                });
+                                triggerCelebration(select || triggerCard || filterRow, taskProgressEls);
+                            }
                         }
 
                         showToast('Görev durumu güncellendi.', 'success');
@@ -2041,7 +2374,10 @@
                         row.classList.toggle('is-done', checked === 1);
                     }
                     updateWeekGroupCounts();
+                    var prevSubtaskPct = readDetailProgressPct();
+                    var nextSubtaskPct = prevSubtaskPct;
                     if (typeof result.data.ilerleme !== 'undefined') {
+                        nextSubtaskPct = Math.max(0, Math.min(100, parseInt(result.data.ilerleme, 10) || 0));
                         var dCount = typeof result.data.alt_tamamlanan !== 'undefined' ? result.data.alt_tamamlanan : result.data.tamamlanan;
                         var tCount = typeof result.data.alt_toplam !== 'undefined' ? result.data.alt_toplam : result.data.toplam;
                         updateLiveProgress(result.data.ilerleme, dCount, tCount);
@@ -2051,6 +2387,9 @@
                     }
                     if (checked === 1) {
                         showTaskStickmanScribe(row || cb);
+                        if (prevSubtaskPct < 100 && nextSubtaskPct >= 100) {
+                            triggerCelebration(cb || row, document.querySelectorAll('[data-progress-bar]'));
+                        }
                     }
                 })
                 .catch(function (err) {
