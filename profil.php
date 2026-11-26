@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             yonlendir('profil.php');
         }
         if ($unvan === '') {
-            $unvan = 'Yazılım Geliştirici';
+            $unvan = 'Ekip Üyesi';
         }
 
         $guncelle = $pdo->prepare('UPDATE kullanicilar SET ad_soyad = ?, unvan = ? WHERE id = ?');
@@ -111,7 +111,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <div class="form-group">
                 <label class="form-label" for="profil-unvan">Unvan / Uzmanlık</label>
-                <input type="text" id="profil-unvan" name="unvan" class="form-control" value="<?php echo e($kullanici['unvan']); ?>" required>
+                <input type="text" id="profil-unvan" name="unvan" class="form-control" value="<?php echo e($kullanici['unvan']); ?>" placeholder="Örn: Yazılım Ekibi Üyesi, Aerodinamik Ekibi Üyesi" autocomplete="organization-title" required>
             </div>
 
             <div class="meta-list" style="margin-bottom:1rem;">

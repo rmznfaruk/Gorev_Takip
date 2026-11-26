@@ -1175,12 +1175,60 @@ a.code-chip:hover {
     display: inline-flex;
     align-items: baseline;
     gap: 7px;
+    min-width: 0;
     color: #0F172A;
     font-weight: 600;
     line-height: 1.4;
 }
 
+.task-title-link > span:last-child {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
 .task-title-link:hover {
+    color: var(--accent);
+}
+
+.task-cell-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.28rem;
+    min-width: 200px;
+}
+
+.task-cell-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.task-cell-plan-link {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.task-cell-plan-link:hover {
+    text-decoration: underline;
+}
+
+.task-title-link.task-title-block {
+    display: block;
+    font-size: 0.885rem;
+    font-weight: 600;
+    line-height: 1.42;
+    color: #0F172A;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.task-title-link.task-title-block:hover {
     color: var(--accent);
 }
 
@@ -1224,11 +1272,12 @@ a.code-chip:hover {
     white-space: nowrap;
 }
 
-/* Kanban Panosu */
-.kanban-grid {
+/* Kanban Panosu & Görünüm Modları (Sütun / Izgara + Kompakt / Detaylı) */
+.kanban-grid,
+.kanban-grid[data-layout="columns"] {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.15rem;
+    gap: 1.1rem;
     align-items: start;
 }
 
@@ -1241,14 +1290,18 @@ a.code-chip:hover {
     flex-direction: column;
     gap: 0.75rem;
     min-height: 220px;
+    max-height: clamp(440px, calc(100vh - 235px), 700px);
     min-width: 0;
+    overflow: hidden;
 }
 
 .kanban-col-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.2rem 0.25rem 0.35rem;
+    flex-shrink: 0;
+    padding: 0.2rem 0.25rem 0.45rem;
+    border-bottom: 1px solid #E2E8F0;
 }
 
 .kanban-col-title {
@@ -1272,9 +1325,109 @@ a.code-chip:hover {
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+    flex: 1 1 auto;
+    min-height: 0;
     min-width: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 3px;
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
 }
 
+.kanban-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.kanban-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.kanban-list::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 999px;
+}
+
+.kanban-list::-webkit-scrollbar-thumb:hover {
+    background-color: #94A3B8;
+}
+
+.kanban-col.is-empty .kanban-list {
+    display: none;
+}
+
+.kanban-col-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 1.65rem 0.85rem;
+    border: 1.5px dashed #CBD5E1;
+    border-radius: var(--radius-md);
+    background-color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.kanban-col-empty[hidden],
+.kanban-board-empty[hidden],
+.task-card[hidden] {
+    display: none !important;
+}
+
+/* Tam Genişlik 3'lü Kart Izgarası Modu (data-layout="grid") */
+.kanban-grid[data-layout="grid"] {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+    align-items: stretch;
+}
+
+.kanban-grid[data-layout="grid"] .kanban-col,
+.kanban-grid[data-layout="grid"] .kanban-list,
+.kanban-grid[data-layout="grid"] .kanban-col.is-empty .kanban-list {
+    display: contents;
+}
+
+.kanban-grid[data-layout="grid"] .kanban-col-header,
+.kanban-grid[data-layout="grid"] .kanban-col-empty {
+    display: none !important;
+}
+
+.kanban-grid[data-layout="grid"] .task-card {
+    height: 100%;
+}
+
+.kanban-grid[data-layout="grid"] .task-card-footer {
+    margin-top: auto;
+}
+
+.kanban-grid[data-layout="grid"] .task-card[data-status="yapilacak"] {
+    border-left: 3px solid #64748B;
+}
+
+.kanban-grid[data-layout="grid"] .task-card[data-status="devam_ediyor"] {
+    border-left: 3px solid #D97706;
+}
+
+.kanban-grid[data-layout="grid"] .task-card[data-status="tamamlandi"] {
+    border-left: 3px solid #059669;
+}
+
+.kanban-board-empty {
+    grid-column: 1 / -1;
+    padding: 2.25rem 1rem;
+    text-align: center;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 0.86rem;
+}
+
+/* Görev Kartı ve Alt Öğeleri */
 .task-card {
     background-color: var(--bg-surface);
     border: 1px solid #E2E8F0;
@@ -1300,6 +1453,23 @@ a.code-chip:hover {
     justify-content: space-between;
     gap: 0.5rem;
     flex-wrap: wrap;
+}
+
+.task-card-badges,
+.task-card-indicators {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.compact-pct-chip {
+    display: none;
+}
+
+.plan-label-short {
+    display: none;
 }
 
 .task-card-title {
@@ -1341,6 +1511,128 @@ a.code-chip:hover {
     border-top: 1px solid #F1F5F9;
 }
 
+/* Kompakt Kart Yoğunluğu Modu (data-density="compact") */
+.kanban-grid[data-density="compact"] .task-card {
+    padding: 0.65rem 0.8rem;
+    gap: 0.42rem;
+}
+
+.kanban-grid[data-density="compact"] .task-card .code-chip,
+.kanban-grid[data-density="compact"] .task-card .task-card-progress {
+    display: none;
+}
+
+.kanban-grid[data-density="compact"] .compact-pct-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    font-weight: 700;
+    line-height: 1.35;
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+}
+
+.kanban-grid[data-density="compact"] .compact-pct-chip.is-complete,
+.compact-pct-chip.is-complete {
+    background-color: #ECFDF5;
+    color: #047857;
+    border-color: #A7F3D0;
+}
+
+.kanban-grid[data-density="compact"] .priority-indicator {
+    font-size: 0.76rem;
+    gap: 5px;
+}
+
+.kanban-grid[data-density="compact"] .task-card-title {
+    font-size: 0.855rem;
+    line-height: 1.34;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.kanban-grid[data-density="compact"] .task-card-title.stickman-scribe-host,
+.kanban-grid[data-density="compact"] .task-card-title.has-active-scribe {
+    display: inline-block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+}
+
+.kanban-grid[data-density="compact"] .task-card-meta {
+    padding-top: 0.38rem;
+    font-size: 0.75rem;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+}
+
+.kanban-grid[data-density="compact"] .task-card-meta .assignee-cell {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.76rem;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.kanban-grid[data-density="compact"] .task-card-meta .assignee-cell > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kanban-grid[data-density="compact"] .task-card-meta .deadline-inline {
+    font-size: 0.71rem;
+    padding: 0.12rem 0.44rem;
+    flex-shrink: 0;
+}
+
+.kanban-grid[data-density="compact"] .task-card-meta .deadline-inline .date-muted {
+    font-size: 0.71rem;
+}
+
+.kanban-grid[data-density="compact"] .task-card-footer {
+    padding-top: 0.38rem;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    margin-top: auto;
+}
+
+.kanban-grid[data-density="compact"] .task-card-footer .status-select,
+.kanban-grid[data-density="compact"] .task-card-footer .status-pill {
+    height: 25px;
+    font-size: 0.74rem;
+}
+
+.kanban-grid[data-density="compact"] .task-card-footer .status-select {
+    padding: 0 24px 0 8px;
+    background-position: right 6px center;
+}
+
+.kanban-grid[data-density="compact"] .task-card-footer .status-pill {
+    padding: 0 8px;
+}
+
+.kanban-grid[data-density="compact"] .plan-label-full {
+    display: none;
+}
+
+.kanban-grid[data-density="compact"] .plan-label-short {
+    display: inline;
+}
+
+.kanban-grid[data-density="compact"] .task-plan-link {
+    height: auto;
+    min-height: 25px;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.74rem;
+}
+
 /* Tablolar */
 .table-wrap {
     width: 100%;
@@ -1375,8 +1667,33 @@ a.code-chip:hover {
     border-bottom: 1px solid #F1F5F9;
     color: #0F172A;
     vertical-align: middle;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.data-table th.col-task-main,
+.data-table td.col-task-main,
+.data-table td[data-label="Görev"] {
+    min-width: 240px;
+    width: 44%;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.data-table td[data-label="Birim"],
+.data-table td[data-label="Öncelik"],
+.data-table td[data-label="Son Tarih"],
+.data-table td[data-label="Durum"],
+.data-table td[data-label="Proje"],
+.data-table td[data-label="İlerleme"] {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.dashboard-task-table thead th,
+.dashboard-task-table tbody td {
+    padding-left: 12px;
+    padding-right: 12px;
 }
 
 .data-table tbody tr:last-child td {
@@ -2314,6 +2631,14 @@ dialog.modal-dialog::backdrop {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .kanban-grid,
+    .kanban-grid[data-layout="grid"],
+    .kanban-grid[data-layout="columns"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 960px) {
     .hero {
         grid-template-columns: minmax(0, 1fr);
@@ -2324,10 +2649,27 @@ dialog.modal-dialog::backdrop {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .kanban-grid,
     .detail-grid,
     .grid-3 {
         grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+    .kanban-grid,
+    .kanban-grid[data-layout="grid"],
+    .kanban-grid[data-layout="columns"] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kanban-col {
+        max-height: 440px;
+    }
+
+    .board-view-controls {
+        width: 100%;
+        justify-content: space-between;
+        margin-left: 0;
     }
 }
 
@@ -2625,6 +2967,12 @@ dialog.modal-dialog::backdrop {
     color: #BE123C;
 }
 
+.unit-aerodinamik {
+    background-color: #F5F3FF;
+    border-color: #DDD6FE;
+    color: #6D28D9;
+}
+
 .unit-genel {
     background-color: #F8FAFC;
     border-color: #E2E8F0;
@@ -2783,6 +3131,11 @@ dialog.modal-dialog::backdrop {
     border-radius: var(--radius-md);
 }
 
+.unit-filter-bar[hidden],
+.board-view-controls[hidden] {
+    display: none !important;
+}
+
 .unit-filter-list {
     display: flex;
     align-items: center;
@@ -2817,6 +3170,65 @@ dialog.modal-dialog::backdrop {
     background-color: var(--accent);
     border-color: var(--accent);
     color: #FFFFFF;
+}
+
+.board-view-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.view-segment {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 8px;
+    background-color: var(--bg-page);
+    border: 1px solid var(--border-color);
+    gap: 2px;
+}
+
+.view-segment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    height: 28px;
+    padding: 0 0.62rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.view-segment-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(15, 23, 42, 0.04);
+}
+
+.view-segment-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+.view-segment-btn.is-active,
+.view-segment-btn.is-active:hover {
+    background-color: var(--bg-surface);
+    color: var(--accent);
+    box-shadow: var(--shadow-xs);
+}
+
+.view-segment-btn svg {
+    width: 13.5px;
+    height: 13.5px;
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -3354,6 +3766,29 @@ dialog.modal-dialog::backdrop {
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+    max-height: 440px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+    padding-right: 2px;
+}
+
+.deadline-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.deadline-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.deadline-list::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 999px;
+}
+
+.deadline-list::-webkit-scrollbar-thumb:hover {
+    background-color: #94A3B8;
 }
 
 .deadline-item {
@@ -3374,6 +3809,16 @@ dialog.modal-dialog::backdrop {
     color: inherit;
 }
 
+.deadline-item.is-weekly-item {
+    border-left: 3px solid #2563EB;
+}
+
+.deadline-item.is-weekly-item:hover {
+    background-color: #F8FAFF;
+    border-color: #93C5FD;
+    border-left-color: #1D4ED8;
+}
+
 .deadline-date-box {
     width: 44px;
     height: 44px;
@@ -3388,11 +3833,21 @@ dialog.modal-dialog::backdrop {
     line-height: 1.1;
 }
 
+.deadline-date-box.is-weekly {
+    background-color: #EFF6FF;
+    border-color: #BFDBFE;
+}
+
 .deadline-day {
     font-family: var(--font-mono);
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+.deadline-date-box.is-weekly .deadline-day {
+    color: #1D4ED8;
+    font-size: 0.86rem;
 }
 
 .deadline-month {
@@ -3402,9 +3857,45 @@ dialog.modal-dialog::backdrop {
     color: var(--text-muted);
 }
 
+.deadline-date-box.is-weekly .deadline-month {
+    color: #2563EB;
+}
+
 .deadline-info {
     min-width: 0;
     flex: 1;
+}
+
+.deadline-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.36rem;
+    min-width: 0;
+    margin-bottom: 0.14rem;
+}
+
+.deadline-kind-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.08rem 0.42rem;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1.25;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.deadline-kind-badge.is-weekly {
+    background-color: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+}
+
+.deadline-kind-badge.is-main {
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
 }
 
 .deadline-title {
@@ -4666,7 +5157,9 @@ dialog.modal-dialog::backdrop {
         margin-bottom: 0;
     }
 
-    .data-table tbody td {
+    .data-table tbody td,
+    .data-table td.col-task-main,
+    .data-table td[data-label] {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -4679,9 +5172,14 @@ dialog.modal-dialog::backdrop {
         text-align: right;
         white-space: normal;
         flex-wrap: wrap;
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        overflow-wrap: break-word;
+        word-break: normal;
         box-sizing: border-box;
+    }
+
+    .task-cell-stack {
+        min-width: 0;
+        width: 100%;
     }
 
     .data-table tbody td > * {
@@ -5343,7 +5841,9 @@ svg.stickman-scribe-actor .stickman-pose-cheer {
         gap: 10pt !important;
     }
 
-    .kanban-grid {
+    .kanban-grid,
+    .kanban-grid[data-layout="grid"],
+    .kanban-grid[data-layout="columns"] {
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         gap: 8pt !important;
@@ -5355,16 +5855,51 @@ svg.stickman-scribe-actor .stickman-pose-cheer {
         border-radius: 6pt !important;
         padding: 8pt !important;
         min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
+    .kanban-list,
+    .deadline-list {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .kanban-grid[data-layout="grid"] .kanban-col,
+    .kanban-grid[data-layout="grid"] .kanban-list {
+        display: contents !important;
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .kanban-grid[data-layout="grid"] .kanban-col-header {
+        display: none !important;
+    }
+
     .task-card {
+        height: auto !important;
         box-shadow: none !important;
         border: 0.75pt solid #CBD5E1 !important;
         padding: 7pt 8pt !important;
         break-inside: avoid;
         page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .kanban-grid[data-layout="grid"] .task-card[data-status="yapilacak"] {
+        border-left: 2.5pt solid #64748B !important;
+    }
+
+    .kanban-grid[data-layout="grid"] .task-card[data-status="devam_ediyor"] {
+        border-left: 2.5pt solid #D97706 !important;
+    }
+
+    .kanban-grid[data-layout="grid"] .task-card[data-status="tamamlandi"] {
+        border-left: 2.5pt solid #059669 !important;
     }
 
     .task-card-footer {
@@ -5383,6 +5918,7 @@ svg.stickman-scribe-actor .stickman-pose-cheer {
     .badge,
     .unit-tag,
     .code-chip,
+    .compact-pct-chip,
     .status-pill,
     .col-dot,
     .priority-dot,
@@ -5393,6 +5929,9 @@ svg.stickman-scribe-actor .stickman-pose-cheer {
     }
 
     .unit-filter-bar,
+    .board-view-controls,
+    .kanban-col-empty,
+    .kanban-board-empty,
     .room-code-actions {
         display: none !important;
     }
@@ -5412,5 +5951,1151 @@ svg.stickman-scribe-actor .stickman-pose-cheer {
         border: 0.5pt solid #CBD5E1 !important;
         padding: 5pt 6pt !important;
         font-size: 9.5pt !important;
+    }
+}
+
+/* ==========================================================================
+   Tema Değiştirici (.theme-toggle) ve Koyu Mod (html[data-theme="dark"])
+   ========================================================================== */
+
+.theme-toggle {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.theme-toggle:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.theme-toggle .theme-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.theme-toggle .theme-icon-moon {
+    display: block;
+}
+
+.theme-toggle .theme-icon-sun {
+    display: none;
+}
+
+html[data-theme="dark"] .theme-toggle .theme-icon-moon {
+    display: none;
+}
+
+html[data-theme="dark"] .theme-toggle .theme-icon-sun {
+    display: block;
+}
+
+@media (max-width: 640px) {
+    .theme-toggle {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+    }
+}
+
+/* Koyu Mod Tasarım Tokenları (Slate-Navy + Kobalt & Zümrüt) */
+html[data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg-page: #0B1120;
+    --bg-surface: #131C2E;
+    --bg-subtle: #1E293B;
+    --bg-hover: rgba(59, 130, 246, 0.14);
+
+    --border-color: #233047;
+    --border: #233047;
+    --border-strong: #334155;
+
+    --text-primary: #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+
+    --accent: #60A5FA;
+    --accent-hover: #93C5FD;
+    --accent-soft: rgba(59, 130, 246, 0.16);
+    --accent-border: rgba(96, 165, 250, 0.34);
+    --accent-ring: rgba(59, 130, 246, 0.28);
+
+    --teal: #2DD4BF;
+    --success: #10B981;
+    --success-soft: rgba(16, 185, 129, 0.15);
+    --success-border: rgba(52, 211, 153, 0.34);
+
+    --warning: #F59E0B;
+    --warning-soft: rgba(245, 158, 11, 0.15);
+    --warning-border: rgba(251, 191, 36, 0.34);
+
+    --danger: #F43F5E;
+    --danger-hover: #FB7185;
+    --danger-soft: rgba(244, 63, 94, 0.16);
+    --danger-border: rgba(251, 113, 133, 0.36);
+
+    --status-todo-text: #CBD5E1;
+    --status-todo-bg: rgba(148, 163, 184, 0.14);
+    --status-todo-border: rgba(148, 163, 184, 0.28);
+
+    --status-progress-text: #FCD34D;
+    --status-progress-bg: rgba(245, 158, 11, 0.16);
+    --status-progress-border: rgba(251, 191, 36, 0.34);
+
+    --status-done-text: #6EE7B7;
+    --status-done-bg: rgba(16, 185, 129, 0.16);
+    --status-done-border: rgba(52, 211, 153, 0.34);
+
+    --shadow-xs: 0 1px 2px rgba(2, 6, 23, 0.42);
+    --shadow-sm: 0 4px 12px rgba(2, 6, 23, 0.48), 0 1px 3px rgba(2, 6, 23, 0.34);
+    --shadow-md: 0 14px 32px rgba(2, 6, 23, 0.64), 0 4px 10px rgba(2, 6, 23, 0.42);
+    --shadow-drawer: 0 24px 56px rgba(2, 6, 23, 0.78);
+}
+
+/* Üst Çubuk, Çekmece Menü ve Bildirim Paneli */
+html[data-theme="dark"] .menu-trigger,
+html[data-theme="dark"] .notif-btn {
+    background-color: #19253A;
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .menu-trigger:hover,
+html[data-theme="dark"] .notif-btn:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent);
+}
+
+html[data-theme="dark"] .theme-toggle {
+    background-color: #19253A;
+    border-color: var(--border-strong);
+    color: #FBBF24;
+}
+
+html[data-theme="dark"] .theme-toggle:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: #FCD34D;
+}
+
+html[data-theme="dark"] .brand-logo {
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.38);
+}
+
+html[data-theme="dark"] .user-pill {
+    background-color: #0F172A;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .user-pill:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .drawer-backdrop {
+    background-color: rgba(2, 6, 23, 0.68);
+}
+
+html[data-theme="dark"] .drawer-logout {
+    background-color: #19253A;
+    border-color: var(--border-strong);
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .drawer-logout:hover {
+    background-color: var(--danger-soft);
+    border-color: var(--danger-border);
+    color: #FDA4AF;
+}
+
+html[data-theme="dark"] .topbar-search-input {
+    background-color: #0F172A;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .topbar-search-input:focus {
+    background-color: #162238;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+html[data-theme="dark"] .notif-badge {
+    background-color: #E11D48;
+    color: #FFFFFF;
+    border-color: var(--bg-surface);
+}
+
+html[data-theme="dark"] .notif-panel {
+    background-color: #162238;
+    border-color: var(--border-strong);
+}
+
+html[data-theme="dark"] .notif-header {
+    background-color: #0F172A;
+    border-bottom-color: var(--border-color);
+}
+
+html[data-theme="dark"] .notif-item {
+    border-bottom-color: var(--border-color);
+}
+
+html[data-theme="dark"] .notif-item:hover {
+    background-color: rgba(148, 163, 184, 0.08);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .notif-item.is-unread {
+    background-color: rgba(59, 130, 246, 0.12);
+}
+
+html[data-theme="dark"] .notif-item.is-unread:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+html[data-theme="dark"] .room-dot-0 { background-color: #3B82F6; }
+html[data-theme="dark"] .room-dot-1 { background-color: #10B981; }
+html[data-theme="dark"] .room-dot-2 { background-color: #F59E0B; }
+html[data-theme="dark"] .room-dot-3 { background-color: #14B8A6; }
+html[data-theme="dark"] .room-dot-4 { background-color: #F43F5E; }
+html[data-theme="dark"] .room-dot-5 { background-color: #94A3B8; }
+
+/* Butonlar ve Vurgu Elemanları */
+html[data-theme="dark"] .btn-primary {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(2, 6, 23, 0.45), 0 1px 2px rgba(37, 99, 235, 0.28);
+}
+
+html[data-theme="dark"] .btn-primary:hover {
+    background-color: #3B82F6;
+    border-color: #3B82F6;
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.38);
+}
+
+html[data-theme="dark"] .btn-secondary {
+    background-color: #19253A;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .btn-secondary:hover {
+    background-color: #24334F;
+    border-color: #475569;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .btn-danger {
+    background-color: #E11D48;
+    border-color: #E11D48;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .btn-danger:hover {
+    background-color: #F43F5E;
+    border-color: #F43F5E;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .btn-ghost {
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .btn-ghost:hover {
+    background-color: rgba(148, 163, 184, 0.12);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .text-danger,
+html[data-theme="dark"] .btn-ghost.text-danger {
+    color: #FB7185;
+}
+
+html[data-theme="dark"] .btn-ghost.text-danger:hover {
+    background-color: var(--danger-soft);
+    color: #FDA4AF;
+}
+
+html[data-theme="dark"] .step-num {
+    background-color: #2563EB;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .stat-card-highlight {
+    background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
+    border-color: #3B82F6;
+    color: #FFFFFF;
+    box-shadow: 0 8px 22px rgba(29, 78, 216, 0.36);
+}
+
+html[data-theme="dark"] .stat-card-highlight:hover {
+    border-color: #60A5FA;
+    box-shadow: 0 10px 26px rgba(37, 99, 235, 0.44);
+}
+
+/* Rozetler, Durum Seçicileri ve Durum Hapları */
+html[data-theme="dark"] .badge-yuksek {
+    color: #FDA4AF;
+    background-color: var(--danger-soft);
+    border-color: var(--danger-border);
+}
+
+html[data-theme="dark"] .badge-yonetici {
+    color: #93C5FD;
+    background-color: var(--accent-soft);
+    border-color: var(--accent-border);
+}
+
+html[data-theme="dark"] .badge-lider {
+    color: #6EE7B7;
+    background-color: var(--success-soft);
+    border-color: var(--success-border);
+}
+
+html[data-theme="dark"] .status-select option,
+html[data-theme="dark"] select.form-control option {
+    background-color: #131C2E;
+    color: #F1F5F9;
+}
+
+html[data-theme="dark"] .status-yapilacak {
+    background-color: rgba(148, 163, 184, 0.15);
+    color: #E2E8F0;
+    border-color: rgba(148, 163, 184, 0.32);
+}
+
+html[data-theme="dark"] .status-select.status-yapilacak {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23CBD5E1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+html[data-theme="dark"] .status-select.status-yapilacak:hover {
+    background-color: rgba(148, 163, 184, 0.24);
+    border-color: rgba(203, 213, 225, 0.46);
+}
+
+html[data-theme="dark"] .status-yapilacak .status-dot {
+    background-color: #94A3B8;
+}
+
+html[data-theme="dark"] .status-devam_ediyor {
+    background-color: rgba(245, 158, 11, 0.16);
+    color: #FDE68A;
+    border-color: rgba(251, 191, 36, 0.36);
+}
+
+html[data-theme="dark"] .status-select.status-devam_ediyor {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FDE68A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+html[data-theme="dark"] .status-select.status-devam_ediyor:hover {
+    background-color: rgba(245, 158, 11, 0.25);
+    border-color: rgba(251, 191, 36, 0.52);
+}
+
+html[data-theme="dark"] .status-devam_ediyor .status-dot {
+    background-color: #FBBF24;
+}
+
+html[data-theme="dark"] .status-tamamlandi {
+    background-color: rgba(16, 185, 129, 0.16);
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.36);
+}
+
+html[data-theme="dark"] .status-select.status-tamamlandi {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236EE7B7' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+html[data-theme="dark"] .status-select.status-tamamlandi:hover {
+    background-color: rgba(16, 185, 129, 0.25);
+    border-color: rgba(52, 211, 153, 0.52);
+}
+
+html[data-theme="dark"] .status-tamamlandi .status-dot {
+    background-color: #34D399;
+}
+
+/* Öncelik Göstergeleri, Kod Etiketleri ve Görev Hücreleri */
+html[data-theme="dark"] .priority-indicator {
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .priority-yuksek {
+    color: #FDA4AF;
+}
+
+html[data-theme="dark"] .priority-yuksek .priority-dot {
+    background-color: #FB7185;
+}
+
+html[data-theme="dark"] .priority-orta {
+    color: #FDE68A;
+}
+
+html[data-theme="dark"] .priority-orta .priority-dot {
+    background-color: #FBBF24;
+}
+
+html[data-theme="dark"] .priority-dusuk {
+    color: #94A3B8;
+}
+
+html[data-theme="dark"] .priority-dusuk .priority-dot {
+    background-color: #64748B;
+}
+
+html[data-theme="dark"] .code-chip {
+    color: #CBD5E1;
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] a.code-chip:hover {
+    background-color: #27364F;
+    border-color: #475569;
+    color: #F8FAFC;
+}
+
+html[data-theme="dark"] .task-title-link,
+html[data-theme="dark"] .task-title-link.task-title-block {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .task-title-link:hover,
+html[data-theme="dark"] .task-title-link.task-title-block:hover {
+    color: var(--accent);
+}
+
+html[data-theme="dark"] .task-id-muted {
+    color: #94A3B8;
+}
+
+html[data-theme="dark"] .assignee-cell {
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .assignee-cell > strong {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .assignee-unassigned {
+    color: #64748B;
+}
+
+html[data-theme="dark"] .date-muted {
+    color: var(--text-muted);
+}
+
+/* Kanban Panosu, Görev Kartları ve Kaydırma Çubukları */
+html[data-theme="dark"] .kanban-col {
+    background-color: #0F172A;
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .kanban-col-header {
+    border-bottom-color: var(--border-color);
+}
+
+html[data-theme="dark"] .kanban-count,
+html[data-theme="dark"] .preview-col-count {
+    color: var(--text-muted);
+}
+
+html[data-theme="dark"] .col-dot-todo {
+    background-color: #94A3B8;
+}
+
+html[data-theme="dark"] .kanban-list,
+html[data-theme="dark"] .deadline-list {
+    scrollbar-color: #334155 transparent;
+}
+
+html[data-theme="dark"] .kanban-list::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .deadline-list::-webkit-scrollbar-thumb {
+    background-color: #334155;
+}
+
+html[data-theme="dark"] .kanban-list::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] .deadline-list::-webkit-scrollbar-thumb:hover {
+    background-color: #475569;
+}
+
+html[data-theme="dark"] .kanban-col-empty {
+    border-color: #334155;
+    background-color: rgba(19, 28, 46, 0.55);
+    color: var(--text-muted);
+}
+
+html[data-theme="dark"] .kanban-grid[data-layout="grid"] .task-card[data-status="yapilacak"] {
+    border-left-color: #94A3B8;
+}
+
+html[data-theme="dark"] .kanban-grid[data-layout="grid"] .task-card[data-status="devam_ediyor"] {
+    border-left-color: #F59E0B;
+}
+
+html[data-theme="dark"] .kanban-grid[data-layout="grid"] .task-card[data-status="tamamlandi"] {
+    border-left-color: #10B981;
+}
+
+html[data-theme="dark"] .task-card {
+    background-color: #152033;
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .task-card:hover {
+    background-color: #19263D;
+    border-color: var(--border-strong);
+}
+
+html[data-theme="dark"] .task-card-title {
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .task-card-meta,
+html[data-theme="dark"] .task-card-footer {
+    border-top-color: var(--border-color);
+}
+
+html[data-theme="dark"] .kanban-grid[data-density="compact"] .compact-pct-chip {
+    background-color: #1E293B;
+    color: #CBD5E1;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .kanban-grid[data-density="compact"] .compact-pct-chip.is-complete,
+html[data-theme="dark"] .compact-pct-chip.is-complete {
+    background-color: rgba(16, 185, 129, 0.16);
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.36);
+}
+
+html[data-theme="dark"] .preview-card {
+    background-color: #162238;
+    border-color: var(--border-color);
+}
+
+/* Veri Tabloları ve Mobil Kart Görünümü */
+html[data-theme="dark"] .data-table thead th {
+    color: #94A3B8;
+    background-color: #0F172A;
+    border-bottom-color: var(--border-color);
+}
+
+html[data-theme="dark"] .data-table tbody td {
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .data-table tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+@media (max-width: 640px) {
+    html[data-theme="dark"] .data-table tbody tr {
+        background-color: var(--bg-surface);
+        border-color: var(--border-color);
+    }
+
+    html[data-theme="dark"] .data-table tbody tr:hover {
+        background-color: var(--bg-surface);
+    }
+
+    html[data-theme="dark"] .data-table tbody td,
+    html[data-theme="dark"] .data-table td.col-task-main,
+    html[data-theme="dark"] .data-table td[data-label] {
+        border-bottom-color: var(--border-color);
+    }
+
+    html[data-theme="dark"] .data-table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    html[data-theme="dark"] .data-table tbody td:first-child {
+        background-color: #0F172A;
+        border-bottom-color: var(--border-color);
+    }
+}
+
+/* Sekmeler, Pano Görünüm Kontrolleri ve Birim Filtreleri */
+html[data-theme="dark"] .tabs {
+    background-color: #0F172A;
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .tab-link.active {
+    background-color: #1E293B;
+    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(2, 6, 23, 0.45);
+}
+
+html[data-theme="dark"] .unit-filter-btn {
+    background-color: #0F172A;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .unit-filter-btn:hover {
+    background-color: #1E293B;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .unit-filter-btn.is-active {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .view-segment {
+    background-color: #0F172A;
+    border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .view-segment-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(148, 163, 184, 0.1);
+}
+
+html[data-theme="dark"] .view-segment-btn.is-active,
+html[data-theme="dark"] .view-segment-btn.is-active:hover {
+    background-color: #1E293B;
+    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(2, 6, 23, 0.45);
+}
+
+/* Form Elemanları ve WebKit Autofill */
+html[data-theme="dark"] .form-control {
+    background-color: #0F172A;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] .form-control::placeholder {
+    color: #64748B;
+}
+
+html[data-theme="dark"] .form-control:focus {
+    background-color: #131C2E;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+html[data-theme="dark"] .form-control.is-invalid {
+    border-color: var(--danger);
+}
+
+html[data-theme="dark"] .form-control:disabled {
+    background-color: #162032;
+    border-color: var(--border-color);
+    color: #64748B;
+}
+
+html[data-theme="dark"] input:-webkit-autofill,
+html[data-theme="dark"] input:-webkit-autofill:hover,
+html[data-theme="dark"] input:-webkit-autofill:focus,
+html[data-theme="dark"] input:-webkit-autofill:active,
+html[data-theme="dark"] textarea:-webkit-autofill,
+html[data-theme="dark"] select:-webkit-autofill {
+    -webkit-text-fill-color: #F1F5F9 !important;
+    -webkit-box-shadow: 0 0 0 1000px #0F172A inset !important;
+    box-shadow: 0 0 0 1000px #0F172A inset !important;
+    caret-color: #F1F5F9;
+    border-color: var(--border-strong);
+    transition: background-color 9999s ease-out 0s;
+}
+
+html[data-theme="dark"] code {
+    color: #93C5FD;
+}
+
+/* Uyarılar, Modallar ve Toast Bildirimleri */
+html[data-theme="dark"] .alert-success {
+    background-color: rgba(16, 185, 129, 0.14);
+    border-color: rgba(52, 211, 153, 0.34);
+    color: #6EE7B7;
+}
+
+html[data-theme="dark"] .alert-error {
+    background-color: rgba(244, 63, 94, 0.15);
+    border-color: rgba(251, 113, 133, 0.36);
+    color: #FDA4AF;
+}
+
+html[data-theme="dark"] .alert-info {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: rgba(96, 165, 250, 0.36);
+    color: #93C5FD;
+}
+
+html[data-theme="dark"] dialog.modal-dialog {
+    background-color: var(--bg-surface);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+html[data-theme="dark"] dialog.modal-dialog::backdrop {
+    background-color: rgba(2, 6, 23, 0.72);
+    backdrop-filter: blur(3px);
+}
+
+html[data-theme="dark"] .toast {
+    background-color: #1E293B;
+    border-color: #334155;
+    color: #F8FAFC;
+}
+
+html[data-theme="dark"] .toast-success {
+    background-color: #065F46;
+    border-color: #10B981;
+    color: #ECFDF5;
+}
+
+html[data-theme="dark"] .toast-error {
+    background-color: #9F1239;
+    border-color: #F43F5E;
+    color: #FFF1F2;
+}
+
+/* Avatarlar, Çöp Adam Profil Görselleri ve Boş Durum İllüstrasyonları */
+html[data-theme="dark"] .avatar-xs {
+    background-color: rgba(59, 130, 246, 0.18);
+    color: #93C5FD;
+    border-color: rgba(96, 165, 250, 0.36);
+}
+
+html[data-theme="dark"] .avatar-tone-1 {
+    background-color: rgba(59, 130, 246, 0.18);
+    color: #93C5FD;
+    border-color: rgba(96, 165, 250, 0.36);
+}
+
+html[data-theme="dark"] .avatar-tone-2 {
+    background-color: rgba(16, 185, 129, 0.18);
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.36);
+}
+
+html[data-theme="dark"] .avatar-tone-3 {
+    background-color: rgba(245, 158, 11, 0.18);
+    color: #FCD34D;
+    border-color: rgba(251, 191, 36, 0.36);
+}
+
+html[data-theme="dark"] .avatar-tone-4 {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #A5B4FC;
+    border-color: rgba(129, 140, 248, 0.38);
+}
+
+html[data-theme="dark"] .avatar-tone-5 {
+    background-color: rgba(244, 63, 94, 0.18);
+    color: #FDA4AF;
+    border-color: rgba(251, 113, 133, 0.36);
+}
+
+html[data-theme="dark"] .avatar-tone-6 {
+    background-color: rgba(20, 184, 166, 0.18);
+    color: #5EEAD4;
+    border-color: rgba(45, 212, 191, 0.36);
+}
+
+html[data-theme="dark"] .stickman-pp circle[fill="#FFFFFF"],
+html[data-theme="dark"] .stickman-pp circle[fill="#ffffff"] {
+    fill: #0F172A;
+    fill-opacity: 0.92;
+}
+
+html[data-theme="dark"] .empty-state-illustration [stroke="#2563eb"],
+html[data-theme="dark"] .empty-state-illustration [stroke="#2563EB"] {
+    stroke: #60A5FA;
+}
+
+html[data-theme="dark"] .empty-state-illustration [fill="#2563eb"],
+html[data-theme="dark"] .empty-state-illustration [fill="#2563EB"] {
+    fill: #60A5FA;
+}
+
+html[data-theme="dark"] .empty-state-illustration [stroke="#64748b"],
+html[data-theme="dark"] .empty-state-illustration [stroke="#64748B"] {
+    stroke: #94A3B8;
+}
+
+html[data-theme="dark"] .empty-state-illustration [stroke="#94a3b8"],
+html[data-theme="dark"] .empty-state-illustration [stroke="#94A3B8"] {
+    stroke: #64748B;
+}
+
+html[data-theme="dark"] .empty-state-illustration [fill="#94a3b8"],
+html[data-theme="dark"] .empty-state-illustration [fill="#94A3B8"] {
+    fill: #64748B;
+}
+
+/* Birim Etiketleri, Oda Kodları, Duyuru ve Alt Görevler */
+html[data-theme="dark"] .unit-yazilim {
+    background-color: rgba(59, 130, 246, 0.16);
+    border-color: rgba(96, 165, 250, 0.34);
+    color: #93C5FD;
+}
+
+html[data-theme="dark"] .unit-elektronik {
+    background-color: rgba(6, 182, 212, 0.16);
+    border-color: rgba(34, 211, 238, 0.34);
+    color: #67E8F9;
+}
+
+html[data-theme="dark"] .unit-mekanik {
+    background-color: rgba(148, 163, 184, 0.15);
+    border-color: rgba(148, 163, 184, 0.32);
+    color: #CBD5E1;
+}
+
+html[data-theme="dark"] .unit-raporlama {
+    background-color: rgba(245, 158, 11, 0.16);
+    border-color: rgba(251, 191, 36, 0.34);
+    color: #FCD34D;
+}
+
+html[data-theme="dark"] .unit-aviyonik {
+    background-color: rgba(244, 63, 94, 0.16);
+    border-color: rgba(251, 113, 133, 0.34);
+    color: #FDA4AF;
+}
+
+html[data-theme="dark"] .unit-aerodinamik {
+    background-color: rgba(139, 92, 246, 0.18);
+    border-color: rgba(167, 139, 250, 0.36);
+    color: #C4B5FD;
+}
+
+html[data-theme="dark"] .unit-genel {
+    background-color: rgba(100, 116, 139, 0.18);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #CBD5E1;
+}
+
+html[data-theme="dark"] .room-code-value {
+    color: #93C5FD;
+    background-color: #0F172A;
+    border-color: var(--accent-border);
+}
+
+html[data-theme="dark"] .room-code-chip .code-chip {
+    background: transparent;
+    border: none;
+    color: #93C5FD;
+}
+
+html[data-theme="dark"] .room-code-copy-btn {
+    background-color: #0F172A;
+    border-color: var(--accent-border);
+    color: #60A5FA;
+}
+
+html[data-theme="dark"] .room-code-copy-btn:hover {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .announcement-bar {
+    background-color: rgba(59, 130, 246, 0.12);
+    border-color: rgba(96, 165, 250, 0.32);
+    color: #DBEAFE;
+}
+
+html[data-theme="dark"] .announcement-icon {
+    background-color: #0F172A;
+    color: #60A5FA;
+    border-color: rgba(96, 165, 250, 0.34);
+}
+
+html[data-theme="dark"] .announcement-title {
+    color: #93C5FD;
+}
+
+html[data-theme="dark"] .subtask-item:hover {
+    background-color: rgba(148, 163, 184, 0.06);
+}
+
+html[data-theme="dark"] .dropzone-box {
+    background-color: #0F172A;
+    border-color: var(--border-strong);
+}
+
+html[data-theme="dark"] .dropzone-box:hover,
+html[data-theme="dark"] .dropzone-box.is-dragover {
+    background-color: var(--accent-soft);
+    border-color: #3B82F6;
+}
+
+html[data-theme="dark"] .room-accent-1 { --room-accent: #3B82F6; }
+html[data-theme="dark"] .room-accent-2 { --room-accent: #10B981; }
+html[data-theme="dark"] .room-accent-3 { --room-accent: #F59E0B; }
+html[data-theme="dark"] .room-accent-4 { --room-accent: #818CF8; }
+html[data-theme="dark"] .room-accent-5 { --room-accent: #F43F5E; }
+html[data-theme="dark"] .room-accent-6 { --room-accent: #14B8A6; }
+
+/* Yaklaşan Teslimler, Aylık Takvim, Aciliyet ve Çöp Adam Çizici */
+html[data-theme="dark"] .deadline-item.is-weekly-item {
+    border-left-color: #3B82F6;
+}
+
+html[data-theme="dark"] .deadline-item.is-weekly-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(96, 165, 250, 0.4);
+    border-left-color: #60A5FA;
+}
+
+html[data-theme="dark"] .deadline-date-box.is-weekly {
+    background-color: rgba(59, 130, 246, 0.16);
+    border-color: rgba(96, 165, 250, 0.34);
+}
+
+html[data-theme="dark"] .deadline-date-box.is-weekly .deadline-day {
+    color: #93C5FD;
+}
+
+html[data-theme="dark"] .deadline-date-box.is-weekly .deadline-month {
+    color: #60A5FA;
+}
+
+html[data-theme="dark"] .deadline-kind-badge.is-weekly {
+    background-color: rgba(59, 130, 246, 0.16);
+    color: #93C5FD;
+    border-color: rgba(96, 165, 250, 0.34);
+}
+
+html[data-theme="dark"] .deadline-kind-badge.is-main {
+    background-color: #1E293B;
+    color: #CBD5E1;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .deadline-overdue {
+    background-color: var(--danger-soft);
+    color: #FDA4AF;
+    border-color: var(--danger-border);
+}
+
+html[data-theme="dark"] .deadline-soon {
+    background-color: var(--warning-soft);
+    color: #FDE68A;
+    border-color: var(--warning-border);
+}
+
+html[data-theme="dark"] .deadline-ok {
+    background-color: var(--accent-soft);
+    color: #93C5FD;
+    border-color: var(--accent-border);
+}
+
+html[data-theme="dark"] .calendar-weekday {
+    background-color: #0F172A;
+    color: #94A3B8;
+}
+
+html[data-theme="dark"] .calendar-cell.is-outside {
+    background-color: #0D1526;
+    color: #64748B;
+}
+
+html[data-theme="dark"] .calendar-cell.is-today {
+    border-color: #3B82F6;
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, #131C2E 48%);
+}
+
+html[data-theme="dark"] .today-pill {
+    background-color: rgba(59, 130, 246, 0.22);
+    color: #93C5FD;
+    border-color: rgba(96, 165, 250, 0.42);
+}
+
+html[data-theme="dark"] .calendar-cell.is-today .calendar-day-num {
+    background-color: #2563EB;
+    color: #FFFFFF;
+}
+
+html[data-theme="dark"] .calendar-week-badge,
+html[data-theme="dark"] .chip-week-badge,
+html[data-theme="dark"] .week-mini-badge {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .chip-yapilacak {
+    background-color: rgba(148, 163, 184, 0.15);
+    color: #E2E8F0;
+    border-left-color: #94A3B8;
+}
+
+html[data-theme="dark"] .chip-devam_ediyor {
+    background-color: rgba(245, 158, 11, 0.16);
+    color: #FDE68A;
+    border-left-color: #F59E0B;
+}
+
+html[data-theme="dark"] .chip-tamamlandi {
+    background-color: rgba(16, 185, 129, 0.16);
+    color: #6EE7B7;
+    border-left-color: #10B981;
+}
+
+html[data-theme="dark"] .chip-overdue {
+    background-color: rgba(244, 63, 94, 0.18);
+    color: #FDA4AF;
+    border-left-color: #F43F5E;
+}
+
+html[data-theme="dark"] .stickman-panic { color: #FB7185; }
+html[data-theme="dark"] .stickman-rush { color: #FBBF24; }
+html[data-theme="dark"] .stickman-walk { color: #60A5FA; }
+html[data-theme="dark"] .stickman-chill { color: #94A3B8; }
+html[data-theme="dark"] .stickman-done { color: #34D399; }
+
+html[data-theme="dark"] .urgency-overdue {
+    background-color: rgba(244, 63, 94, 0.16);
+    color: #FDA4AF;
+    border-color: rgba(251, 113, 133, 0.36);
+}
+
+html[data-theme="dark"] .urgency-soon {
+    background-color: rgba(245, 158, 11, 0.16);
+    color: #FDE68A;
+    border-color: rgba(251, 191, 36, 0.36);
+}
+
+html[data-theme="dark"] .urgency-active {
+    background-color: rgba(59, 130, 246, 0.16);
+    color: #93C5FD;
+    border-color: rgba(96, 165, 250, 0.36);
+}
+
+html[data-theme="dark"] .urgency-calm {
+    background-color: rgba(148, 163, 184, 0.14);
+    color: #CBD5E1;
+    border-color: rgba(148, 163, 184, 0.28);
+}
+
+html[data-theme="dark"] .urgency-done {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.34);
+}
+
+html[data-theme="dark"] .calendar-chip.urgency-overdue { border-left: 3px solid #F43F5E; }
+html[data-theme="dark"] .calendar-chip.urgency-soon { border-left: 3px solid #F59E0B; }
+html[data-theme="dark"] .calendar-chip.urgency-active { border-left: 3px solid #3B82F6; }
+html[data-theme="dark"] .calendar-chip.urgency-calm { border-left: 3px solid #94A3B8; }
+html[data-theme="dark"] .calendar-chip.urgency-done { border-left: 3px solid #10B981; }
+
+html[data-theme="dark"] .subtask-item.is-done .deadline-inline {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.34);
+}
+
+html[data-theme="dark"] .subtask-item.is-done .deadline-inline .stickman-panic {
+    color: #34D399;
+}
+
+html[data-theme="dark"] svg.stickman-scribble-stroke .stickman-scribble-path-main {
+    stroke: #60A5FA;
+}
+
+html[data-theme="dark"] svg.stickman-scribble-stroke .stickman-scribble-path-accent {
+    stroke: #34D399;
+}
+
+html[data-theme="dark"] svg.stickman-scribe-actor {
+    filter: drop-shadow(0 2px 4px rgba(2, 6, 23, 0.55));
+}
+
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-draw line,
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-draw circle {
+    stroke: #93C5FD;
+}
+
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-draw circle,
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-cheer circle {
+    fill: #0F172A;
+}
+
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-cheer line,
+html[data-theme="dark"] svg.stickman-scribe-actor .stickman-pose-cheer circle {
+    stroke: #34D399;
+}
+
+html[data-theme="dark"] .stickman-speech {
+    background-color: #1E293B;
+    color: #F8FAFC;
+    border-color: rgba(96, 165, 250, 0.55);
+    box-shadow: 0 6px 16px rgba(2, 6, 23, 0.58);
+}
+
+/* Yazdırma / PDF Rapor Sırasında Koyu Modu Temiz Kağıt Raporuna Sıfırla */
+@media print {
+    html[data-theme="dark"] {
+        color-scheme: light !important;
+        --bg-page: #F8FAFC;
+        --bg-surface: #FFFFFF;
+        --bg-subtle: #F1F5F9;
+        --border-color: #E2E8F0;
+        --border: #E2E8F0;
+        --border-strong: #CBD5E1;
+        --text-primary: #0F172A;
+        --text-secondary: #334155;
+        --text-muted: #64748B;
+        --accent: #2563EB;
+        --accent-hover: #1D4ED8;
+        --accent-soft: #EFF6FF;
+        --accent-border: #BFDBFE;
+    }
+
+    html[data-theme="dark"] .card,
+    html[data-theme="dark"] .task-card,
+    html[data-theme="dark"] .week-group,
+    html[data-theme="dark"] .table-wrap {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+
+    html[data-theme="dark"] .data-table thead th {
+        background-color: #F8FAFC !important;
+        color: #475569 !important;
+    }
+
+    html[data-theme="dark"] .data-table tbody td,
+    html[data-theme="dark"] .task-card-title,
+    html[data-theme="dark"] .task-title-link {
+        color: #0F172A !important;
     }
 }

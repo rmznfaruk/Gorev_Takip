@@ -28,6 +28,233 @@ if (!function_exists('db_sqlite_tablo_var_mi')) {
     }
 }
 
+if (!function_exists('db_turkce_kucuk_harf')) {
+    function db_turkce_kucuk_harf($deger)
+    {
+        $metin = trim((string) $deger);
+        if ($metin === '') {
+            return '';
+        }
+        $daraltilmis = @preg_replace('/\s+/u', ' ', $metin);
+        $metin = ($daraltilmis !== null) ? $daraltilmis : preg_replace('/\s+/', ' ', $metin);
+
+        // NFD birlesik nokta/aksan dizilerini NFC kucuk harf karsiliklarina indirge
+        $nfd_harita = array(
+            "i\xCC\x87" => 'i',
+            "I\xCC\x87" => 'i',
+            "u\xCC\x88" => 'ü',
+            "U\xCC\x88" => 'ü',
+            "o\xCC\x88" => 'ö',
+            "O\xCC\x88" => 'ö',
+            "s\xCC\xA7" => 'ş',
+            "S\xCC\xA7" => 'ş',
+            "c\xCC\xA7" => 'ç',
+            "C\xCC\xA7" => 'ç',
+            "g\xCC\x86" => 'ğ',
+            "G\xCC\x86" => 'ğ',
+            "\xCC\x87" => '',
+        );
+        $metin = strtr($metin, $nfd_harita);
+
+        $harf_haritasi = array(
+            'İ' => 'i',
+            'I' => 'ı',
+            'ı' => 'ı',
+            'Ş' => 'ş',
+            'Ğ' => 'ğ',
+            'Ü' => 'ü',
+            'Ö' => 'ö',
+            'Ç' => 'ç',
+            'A' => 'a', 'B' => 'b', 'C' => 'c', 'D' => 'd', 'E' => 'e', 'F' => 'f',
+            'G' => 'g', 'H' => 'h', 'J' => 'j', 'K' => 'k', 'L' => 'l', 'M' => 'm',
+            'N' => 'n', 'O' => 'o', 'P' => 'p', 'Q' => 'q', 'R' => 'r', 'S' => 's',
+            'T' => 't', 'U' => 'u', 'V' => 'v', 'W' => 'w', 'X' => 'x', 'Y' => 'y',
+            'Z' => 'z',
+        );
+
+        return strtr($metin, $harf_haritasi);
+    }
+}
+
+if (!function_exists('db_ascii_katla')) {
+    function db_ascii_katla($deger)
+    {
+        $kucuk = db_turkce_kucuk_harf($deger);
+        if ($kucuk === '') {
+            return '';
+        }
+        return strtr($kucuk, array(
+            'ı' => 'i',
+            'ş' => 's',
+            'ğ' => 'g',
+            'ü' => 'u',
+            'ö' => 'o',
+            'ç' => 'c',
+        ));
+    }
+}
+
+if (!function_exists('db_birim_aerodinamik_migrasyonu_calistir')) {
+    function db_birim_aerodinamik_migrasyonu_calistir(PDO $pdo, $surucu)
+    {
+        $kontrol = $pdo->query("SELECT 1 FROM sistem_migrasyonlari WHERE ad = 'birim_aerodinamik_v1' LIMIT 1");
+        if ($kontrol && $kontrol->fetchColumn()) {
+            return;
+        }
+
+        $gorevler_var = ($surucu === 'sqlite')
+            ? db_sqlite_tablo_var_mi($pdo, 'gorevler')
+            : db_mysql_tablo_var_mi($pdo, 'gorevler');
+
+        if ($gorevler_var) {
+            if ($surucu === 'mysql') {
+                $sutun_stmt = $pdo->query("SHOW COLUMNS FROM gorevler LIKE 'birim'");
+                $sutun = $sutun_stmt ? $sutun_stmt->fetch(PDO::FETCH_ASSOC) : null;
+                if ($sutun && isset($sutun['Type'])) {
+                    $tip = strtolower(trim((string) $sutun['Type']));
+                    $genislet = false;
+                    if (strpos($tip, 'enum(') === 0) {
+                        $genislet = true;
+                    } elseif (preg_match('/^varchar\((\d+)\)$/', $tip, $eslesme) && (int) $eslesme[1] < 40) {
+                        $genislet = true;
+                    }
+                    if ($genislet) {
+                        $pdo->exec("ALTER TABLE gorevler MODIFY COLUMN birim VARCHAR(40) NOT NULL DEFAULT 'genel'");
+                    }
+                }
+
+                $aday_stmt = $pdo->query("SELECT id, birim FROM gorevler WHERE birim IS NOT NULL AND BINARY birim <> 'aerodinamik'");
+                $adaylar = $aday_stmt ? $aday_stmt->fetchAll(PDO::FETCH_ASSOC) : array();
+                if (!empty($adaylar)) {
+                    $guncelle = $pdo->prepare("UPDATE gorevler SET birim = 'aerodinamik', guncelleme_tarihi = guncelleme_tarihi WHERE id = ?");
+                    foreach ($adaylar as $aday) {
+                        $ham = isset($aday['birim']) ? (string) $aday['birim'] : '';
+                        if ($ham !== 'aerodinamik' && db_ascii_katla($ham) === 'aerodinamik') {
+                            $guncelle->execute(array((int) $aday['id']));
+                        }
+                    }
+                }
+            } else {
+                $aday_stmt = $pdo->query("SELECT id, birim FROM gorevler WHERE birim IS NOT NULL AND birim <> 'aerodinamik'");
+                $adaylar = $aday_stmt ? $aday_stmt->fetchAll(PDO::FETCH_ASSOC) : array();
+                if (!empty($adaylar)) {
+                    $guncelle = $pdo->prepare("UPDATE gorevler SET birim = 'aerodinamik' WHERE id = ?");
+                    foreach ($adaylar as $aday) {
+                        $ham = isset($aday['birim']) ? (string) $aday['birim'] : '';
+                        if ($ham !== 'aerodinamik' && db_ascii_katla($ham) === 'aerodinamik') {
+                            $guncelle->execute(array((int) $aday['id']));
+                        }
+                    }
+                }
+            }
+        }
+
+        $kayit_sql = ($surucu === 'sqlite')
+            ? 'INSERT OR IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)'
+            : 'INSERT IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)';
+        $kayit_stmt = $pdo->prepare($kayit_sql);
+        $kayit_stmt->execute(array('birim_aerodinamik_v1', db_istanbul_simdi()));
+    }
+}
+
+if (!function_exists('db_ekip_unvan_migrasyonu_calistir')) {
+    function db_ekip_unvan_migrasyonu_calistir(PDO $pdo, $surucu)
+    {
+        $kontrol = $pdo->query("SELECT 1 FROM sistem_migrasyonlari WHERE ad = 'ekip_unvanlari_v1' LIMIT 1");
+        if ($kontrol && $kontrol->fetchColumn()) {
+            return;
+        }
+
+        $kullanici_stmt = $pdo->query('SELECT id, ad_soyad, unvan FROM kullanicilar');
+        $kullanicilar = $kullanici_stmt ? $kullanici_stmt->fetchAll(PDO::FETCH_ASSOC) : array();
+        if (empty($kullanicilar)) {
+            return;
+        }
+
+        // Ramazan Faruk Acıöz (Takım Lideri) ve Nursena KILAVUZ (İletişim Sorumlusu) kesinlikle haric tutulur.
+        $haric_tr = array(
+            'ramazan faruk acıöz' => true,
+            'nursena kılavuz' => true,
+        );
+        $haric_ascii = array(
+            'ramazan faruk acioz' => true,
+            'nursena kilavuz' => true,
+        );
+
+        $unvan_haritasi_tr = array(
+            'emine gür' => 'Aerodinamik Ekibi Üyesi',
+            'emirhan erdoğan' => 'Yazılım Ekibi Üyesi',
+            'eray kilci' => 'Aviyonik Ekibi Lideri',
+            'evren yeşilyaprak' => 'Mekanik Ekibi Üyesi',
+            'fatma sağır' => 'Yazılım Ekibi Üyesi',
+            'kayra şener afşar' => 'Aviyonik Ekibi Üyesi',
+            'ömer şahin' => 'Yazılım Ekibi Üyesi',
+            'türker türk' => 'Aerodinamik Ekibi Üyesi',
+        );
+
+        $unvan_haritasi_ascii = array(
+            'emine gur' => 'Aerodinamik Ekibi Üyesi',
+            'emirhan erdogan' => 'Yazılım Ekibi Üyesi',
+            'eray kilci' => 'Aviyonik Ekibi Lideri',
+            'evren yesilyaprak' => 'Mekanik Ekibi Üyesi',
+            'fatma sagir' => 'Yazılım Ekibi Üyesi',
+            'kayra sener afsar' => 'Aviyonik Ekibi Üyesi',
+            'omer sahin' => 'Yazılım Ekibi Üyesi',
+            'turker turk' => 'Aerodinamik Ekibi Üyesi',
+        );
+
+        $proje_uyeleri_var = ($surucu === 'sqlite')
+            ? db_sqlite_tablo_var_mi($pdo, 'proje_uyeleri')
+            : db_mysql_tablo_var_mi($pdo, 'proje_uyeleri');
+
+        $pdo->beginTransaction();
+        try {
+            $unvan_stmt = $pdo->prepare('UPDATE kullanicilar SET unvan = ? WHERE id = ?');
+            $proje_rol_stmt = $proje_uyeleri_var
+                ? $pdo->prepare("UPDATE proje_uyeleri SET proje_rolu = ? WHERE kullanici_id = ? AND (proje_rolu IS NULL OR TRIM(proje_rolu) = '' OR TRIM(proje_rolu) = 'Ekip Üyesi')")
+                : null;
+
+            foreach ($kullanicilar as $satir) {
+                $ham_ad = isset($satir['ad_soyad']) ? (string) $satir['ad_soyad'] : '';
+                $ad_tr = db_turkce_kucuk_harf($ham_ad);
+                $ad_ascii = db_ascii_katla($ham_ad);
+
+                if ($ad_tr === '' || isset($haric_tr[$ad_tr]) || isset($haric_ascii[$ad_ascii])) {
+                    continue;
+                }
+
+                $yeni_unvan = null;
+                if (isset($unvan_haritasi_tr[$ad_tr])) {
+                    $yeni_unvan = $unvan_haritasi_tr[$ad_tr];
+                } elseif (isset($unvan_haritasi_ascii[$ad_ascii])) {
+                    $yeni_unvan = $unvan_haritasi_ascii[$ad_ascii];
+                }
+
+                if ($yeni_unvan !== null) {
+                    $kullanici_id = (int) $satir['id'];
+                    $unvan_stmt->execute(array($yeni_unvan, $kullanici_id));
+                    if ($proje_rol_stmt) {
+                        $proje_rol_stmt->execute(array($yeni_unvan, $kullanici_id));
+                    }
+                }
+            }
+
+            $kayit_sql = ($surucu === 'sqlite')
+                ? 'INSERT OR IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)'
+                : 'INSERT IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)';
+            $kayit_stmt = $pdo->prepare($kayit_sql);
+            $kayit_stmt->execute(array('ekip_unvanlari_v1', db_istanbul_simdi()));
+
+            $pdo->commit();
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+}
+
 if (!function_exists('db_sqlite_baslat')) {
     function db_sqlite_baslat(PDO $pdo)
     {
@@ -137,6 +364,9 @@ if (!function_exists('db_sqlite_baslat')) {
             $birim_stmt = $pdo->prepare('INSERT OR IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)');
             $birim_stmt->execute(array('birim_aviyonik_v1', db_istanbul_simdi()));
 
+            db_birim_aerodinamik_migrasyonu_calistir($pdo, 'sqlite');
+            db_ekip_unvan_migrasyonu_calistir($pdo, 'sqlite');
+
             return;
         }
 
@@ -188,6 +418,7 @@ if (!function_exists('db_sqlite_baslat')) {
                 olusturan_id INTEGER NOT NULL,
                 durum TEXT NOT NULL DEFAULT 'yapilacak' CHECK (durum IN ('yapilacak', 'devam_ediyor', 'tamamlandi')),
                 oncelik TEXT NOT NULL DEFAULT 'orta' CHECK (oncelik IN ('dusuk', 'orta', 'yuksek')),
+                -- Desteklenen birimler: genel, yazilim, elektronik, mekanik, raporlama, aviyonik, aerodinamik
                 birim TEXT NOT NULL DEFAULT 'genel',
                 son_tarih TEXT NULL,
                 olusturma_tarihi TEXT NOT NULL DEFAULT (datetime('now', '+3 hours')),
@@ -267,6 +498,7 @@ if (!function_exists('db_sqlite_baslat')) {
         $mig_stmt = $pdo->prepare('INSERT OR IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)');
         $mig_stmt->execute(array('tz_istanbul_v1', $simdi));
         $mig_stmt->execute(array('birim_aviyonik_v1', $simdi));
+        $mig_stmt->execute(array('birim_aerodinamik_v1', $simdi));
     }
 }
 
@@ -355,6 +587,9 @@ if (!function_exists('db_mysql_baslat')) {
                 $birim_stmt = $pdo->prepare('INSERT IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES (?, ?)');
                 $birim_stmt->execute(array('birim_aviyonik_v1', db_istanbul_simdi()));
             }
+
+            db_birim_aerodinamik_migrasyonu_calistir($pdo, 'mysql');
+            db_ekip_unvan_migrasyonu_calistir($pdo, 'mysql');
         }
 
         // InfinityFree MySQL'de named 'Europe/Istanbul' tablosu olmayabilecegi icin sayisal '+03:00' kullanilir

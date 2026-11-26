@@ -192,6 +192,9 @@
             if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
                 return;
             }
+            if (e.target && typeof e.target.closest === 'function' && e.target.closest('[data-theme-toggle]')) {
+                return;
+            }
             var link = e.target && typeof e.target.closest === 'function' ? e.target.closest('a[href]') : null;
             if (!link) {
                 return;
@@ -243,6 +246,95 @@
             topProgress.done(true);
         });
     }
+
+    /* ----------------------------------------------------------------------
+       0a. Koyu / Açık Tema Geçiş Kontrolcüsü ([data-theme-toggle])
+       ---------------------------------------------------------------------- */
+    var THEME_STORAGE_KEY = 'gt_theme';
+
+    function isDarkThemeActive() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+
+    function resolveStoredOrCurrentTheme() {
+        try {
+            if (window.localStorage) {
+                var stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+                return stored === 'dark' ? 'dark' : 'light';
+            }
+        } catch (err) {
+            // Gizli sekme veya depolama izni kapaliysa mevcut DOM durumunu koru
+        }
+        return isDarkThemeActive() ? 'dark' : 'light';
+    }
+
+    function writeStoredTheme(theme) {
+        try {
+            if (window.localStorage) {
+                window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+            }
+        } catch (err) {
+            // Gizli sekme veya depolama izni kapaliysa sessizce devam et
+        }
+    }
+
+    function syncThemeToggleButtons(isDark) {
+        var label = isDark ? 'Açık moda geç' : 'Koyu moda geç';
+        var pressed = isDark ? 'true' : 'false';
+        var buttons = document.querySelectorAll('[data-theme-toggle]');
+        buttons.forEach(function (btn) {
+            btn.setAttribute('aria-pressed', pressed);
+            btn.setAttribute('aria-label', label);
+            btn.setAttribute('title', label);
+        });
+    }
+
+    function applyTheme(theme, persist) {
+        var isDark = theme === 'dark';
+        if (isDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        syncThemeToggleButtons(isDark);
+        if (persist) {
+            writeStoredTheme(isDark ? 'dark' : 'light');
+        }
+    }
+
+    function initThemeToggle() {
+        applyTheme(resolveStoredOrCurrentTheme(), false);
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target && typeof e.target.closest === 'function'
+                ? e.target.closest('[data-theme-toggle]')
+                : null;
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            var nextTheme = isDarkThemeActive() ? 'light' : 'dark';
+            applyTheme(nextTheme, true);
+        });
+
+        window.addEventListener('storage', function (e) {
+            if (!e) {
+                return;
+            }
+            if (e.key === null || e.key === THEME_STORAGE_KEY) {
+                var syncedTheme = e.newValue === 'dark' ? 'dark' : 'light';
+                applyTheme(syncedTheme, false);
+            }
+        });
+
+        window.addEventListener('pageshow', function (e) {
+            if (e && e.persisted) {
+                applyTheme(resolveStoredOrCurrentTheme(), false);
+            }
+        });
+    }
+
+    applyTheme(resolveStoredOrCurrentTheme(), false);
 
     /* ----------------------------------------------------------------------
        0b. Görev Yazısının Üstünde Yürüyüp Çizen Çöp Adam (showTaskStickmanScribe)
@@ -675,20 +767,44 @@
        ---------------------------------------------------------------------- */
     function updateKanbanCounts() {
         var cols = document.querySelectorAll('.kanban-col[data-status]');
+        if (!cols.length) {
+            return;
+        }
+
+        var totalVisible = 0;
+
         cols.forEach(function (col) {
             var list = col.querySelector('.kanban-list');
             var countEl = col.querySelector('.kanban-count');
-            if (list && countEl) {
+            var visible = 0;
+
+            if (list) {
                 var cards = list.querySelectorAll('.task-card');
-                var visible = 0;
                 cards.forEach(function (card) {
-                    if (card.style.display !== 'none') {
+                    if (card.style.display !== 'none' && !card.hidden) {
                         visible++;
                     }
                 });
+            }
+
+            totalVisible += visible;
+
+            if (countEl) {
                 countEl.textContent = String(visible);
             }
+
+            col.classList.toggle('is-empty', visible === 0);
+
+            var colEmpty = col.querySelector('[data-kanban-col-empty]');
+            if (colEmpty) {
+                colEmpty.hidden = visible > 0;
+            }
         });
+
+        var boardEmpty = document.querySelector('[data-kanban-board-empty]');
+        if (boardEmpty) {
+            boardEmpty.hidden = totalVisible > 0;
+        }
     }
 
     function initTaskStatusSelects() {
@@ -706,7 +822,14 @@
                     return;
                 }
 
-                select.disabled = true;
+                var peerSelects = document.querySelectorAll('[data-task-status][data-task-id="' + taskId + '"]');
+                if (peerSelects.length) {
+                    peerSelects.forEach(function (s) {
+                        s.disabled = true;
+                    });
+                } else {
+                    select.disabled = true;
+                }
                 applyStatusClass(select, newStatus);
 
                 fetch('api/gorev_durum.php', {
@@ -732,8 +855,27 @@
                             throw new Error((result.data && (result.data.mesaj || result.data.error)) || 'Durum güncellenemedi.');
                         }
 
-                        select.dataset.prevValue = newStatus;
-                        applyStatusClass(select, newStatus);
+                        var allTaskSelects = document.querySelectorAll('[data-task-status][data-task-id="' + taskId + '"]');
+                        if (allTaskSelects.length) {
+                            allTaskSelects.forEach(function (otherSelect) {
+                                otherSelect.value = newStatus;
+                                otherSelect.dataset.prevValue = newStatus;
+                                applyStatusClass(otherSelect, newStatus);
+                                var ancestorFilter = otherSelect.closest('[data-filter-item]');
+                                if (ancestorFilter) {
+                                    ancestorFilter.setAttribute('data-status', newStatus);
+                                }
+                            });
+                        } else {
+                            select.value = newStatus;
+                            select.dataset.prevValue = newStatus;
+                            applyStatusClass(select, newStatus);
+                        }
+
+                        var filterRow = select.closest('[data-filter-item]');
+                        if (filterRow) {
+                            filterRow.setAttribute('data-status', newStatus);
+                        }
 
                         var badges = document.querySelectorAll('[data-task-badge="' + taskId + '"]');
                         badges.forEach(function (badge) {
@@ -749,33 +891,78 @@
                                 badge.className = 'badge ' + (STATUS_BADGE_CLASS[newStatus] || 'badge-yapilacak');
                                 badge.textContent = STATUS_LABELS[newStatus] || newStatus;
                             }
+                            var badgeFilter = badge.closest('[data-filter-item]');
+                            if (badgeFilter) {
+                                badgeFilter.setAttribute('data-status', newStatus);
+                            }
                         });
 
-                        var card = select.closest('.task-card');
+                        var triggerCard = select.closest('.task-card');
+                        var kanbanCard = document.querySelector('.task-card[data-task-card="' + taskId + '"]') || triggerCard;
+                        if (kanbanCard) {
+                            kanbanCard.setAttribute('data-status', newStatus);
+                        }
+
+                        if (typeof result.data.ilerleme !== 'undefined') {
+                            var safePct = Math.max(0, Math.min(100, parseInt(result.data.ilerleme, 10) || 0));
+                            updateLiveProgress(safePct);
+
+                            if (kanbanCard) {
+                                var cardFill = kanbanCard.querySelector('.task-card-progress-fill');
+                                if (cardFill) {
+                                    cardFill.style.width = safePct + '%';
+                                    cardFill.classList.toggle('is-complete', safePct >= 100);
+                                }
+                                var cardMetaPct = kanbanCard.querySelector('.task-card-progress-meta span:first-child');
+                                if (cardMetaPct) {
+                                    cardMetaPct.textContent = '%' + safePct;
+                                }
+                            }
+
+                            var pctChips = document.querySelectorAll('[data-card-pct="' + taskId + '"]');
+                            pctChips.forEach(function (chip) {
+                                chip.textContent = '%' + safePct;
+                                chip.classList.toggle('is-complete', safePct >= 100);
+                            });
+
+                            allTaskSelects.forEach(function (otherSelect) {
+                                var listRow = otherSelect.closest('tr');
+                                if (listRow) {
+                                    var rowFill = listRow.querySelector('.inline-progress-fill');
+                                    if (rowFill) {
+                                        rowFill.style.width = safePct + '%';
+                                        rowFill.classList.toggle('is-complete', safePct >= 100);
+                                    }
+                                    var rowVal = listRow.querySelector('.inline-progress-val');
+                                    if (rowVal) {
+                                        rowVal.textContent = '%' + safePct;
+                                    }
+                                }
+                            });
+                        }
+
                         var targetCol = document.querySelector('.kanban-col[data-status="' + newStatus + '"] .kanban-list');
-                        if (card && targetCol && card.parentNode !== targetCol) {
-                            if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                                document.startViewTransition(() => {
-                                    targetCol.appendChild(card);
+                        if (kanbanCard && targetCol) {
+                            if (kanbanCard.parentNode !== targetCol) {
+                                var canAnimateMove = document.startViewTransition
+                                    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                                    && !kanbanCard.closest('[hidden]');
+                                if (canAnimateMove) {
+                                    document.startViewTransition(function () {
+                                        targetCol.appendChild(kanbanCard);
+                                        updateKanbanCounts();
+                                    });
+                                } else {
+                                    targetCol.appendChild(kanbanCard);
                                     updateKanbanCounts();
-                                });
+                                }
                             } else {
-                                targetCol.appendChild(card);
                                 updateKanbanCounts();
                             }
                         }
 
-                        var filterRow = select.closest('[data-filter-item]');
-                        if (filterRow) {
-                            filterRow.setAttribute('data-status', newStatus);
-                        }
-
-                        if (typeof result.data.ilerleme !== 'undefined') {
-                            updateLiveProgress(result.data.ilerleme);
-                        }
-
                         if (newStatus === 'tamamlandi') {
-                            showTaskStickmanScribe(card || filterRow || select);
+                            showTaskStickmanScribe(triggerCard || filterRow || select);
                         }
 
                         showToast('Görev durumu güncellendi.', 'success');
@@ -786,7 +973,13 @@
                         showToast(err.message || 'Durum güncellenirken hata oluştu.', 'error');
                     })
                     .finally(function () {
-                        select.disabled = false;
+                        if (peerSelects.length) {
+                            peerSelects.forEach(function (s) {
+                                s.disabled = false;
+                            });
+                        } else {
+                            select.disabled = false;
+                        }
                     });
             });
         });
@@ -1929,14 +2122,136 @@
     }
 
     /* ----------------------------------------------------------------------
-       10. Sekme Geçişleri (proje_detay.php) ve Sürükle-Bırak Dosya Seçici
+       10. Sekme Geçişleri, Pano Görünüm Kontrolleri (proje_detay.php) ve Dosya Seçici
        ---------------------------------------------------------------------- */
+    function initBoardViewControls() {
+        var board = document.querySelector('[data-kanban-board]');
+        var controls = document.querySelector('[data-board-controls]');
+        if (!board) {
+            return;
+        }
+
+        var projectId = board.getAttribute('data-project-id') || 'default';
+        var layoutStorageKey = 'gt_board_layout_' + projectId;
+        var densityStorageKey = 'gt_board_density_' + projectId;
+
+        var VALID_LAYOUTS = { grid: true, columns: true };
+        var VALID_DENSITIES = { compact: true, detailed: true };
+
+        var scope = controls || document;
+        var layoutButtons = scope.querySelectorAll('[data-board-layout-btn]');
+        var densityButtons = scope.querySelectorAll('[data-board-density-btn]');
+
+        function safeStorageGet(key) {
+            try {
+                return window.localStorage ? window.localStorage.getItem(key) : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function safeStorageSet(key, value) {
+            try {
+                if (window.localStorage) {
+                    window.localStorage.setItem(key, value);
+                }
+            } catch (err) {
+                // Tarayici depolama izni kapaliysa sessizce devam et
+            }
+        }
+
+        function syncLayoutButtons(activeLayout) {
+            layoutButtons.forEach(function (btn) {
+                var isAct = btn.getAttribute('data-board-layout-btn') === activeLayout;
+                btn.classList.toggle('is-active', isAct);
+                btn.setAttribute('aria-pressed', isAct ? 'true' : 'false');
+            });
+        }
+
+        function syncDensityButtons(activeDensity) {
+            densityButtons.forEach(function (btn) {
+                var isAct = btn.getAttribute('data-board-density-btn') === activeDensity;
+                btn.classList.toggle('is-active', isAct);
+                btn.setAttribute('aria-pressed', isAct ? 'true' : 'false');
+            });
+        }
+
+        function applyWithTransition(mutateFn) {
+            if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.startViewTransition(function () {
+                    mutateFn();
+                });
+            } else {
+                mutateFn();
+            }
+        }
+
+        var savedLayout = safeStorageGet(layoutStorageKey);
+        var initialLayout = (savedLayout && VALID_LAYOUTS[savedLayout])
+            ? savedLayout
+            : (board.getAttribute('data-layout') || board.getAttribute('data-default-layout') || 'columns');
+        if (!VALID_LAYOUTS[initialLayout]) {
+            initialLayout = 'columns';
+        }
+        board.setAttribute('data-layout', initialLayout);
+        syncLayoutButtons(initialLayout);
+
+        var savedDensity = safeStorageGet(densityStorageKey);
+        var initialDensity = (savedDensity && VALID_DENSITIES[savedDensity])
+            ? savedDensity
+            : (board.getAttribute('data-density') || board.getAttribute('data-default-density') || 'detailed');
+        if (!VALID_DENSITIES[initialDensity]) {
+            initialDensity = 'detailed';
+        }
+        board.setAttribute('data-density', initialDensity);
+        syncDensityButtons(initialDensity);
+
+        layoutButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var nextLayout = btn.getAttribute('data-board-layout-btn') || '';
+                if (!VALID_LAYOUTS[nextLayout]) {
+                    return;
+                }
+                if (board.getAttribute('data-layout') !== nextLayout) {
+                    applyWithTransition(function () {
+                        board.setAttribute('data-layout', nextLayout);
+                        syncLayoutButtons(nextLayout);
+                    });
+                } else {
+                    syncLayoutButtons(nextLayout);
+                }
+                safeStorageSet(layoutStorageKey, nextLayout);
+            });
+        });
+
+        densityButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var nextDensity = btn.getAttribute('data-board-density-btn') || '';
+                if (!VALID_DENSITIES[nextDensity]) {
+                    return;
+                }
+                if (board.getAttribute('data-density') !== nextDensity) {
+                    applyWithTransition(function () {
+                        board.setAttribute('data-density', nextDensity);
+                        syncDensityButtons(nextDensity);
+                    });
+                } else {
+                    syncDensityButtons(nextDensity);
+                }
+                safeStorageSet(densityStorageKey, nextDensity);
+            });
+        });
+    }
+
     function initTabs() {
         var tabButtons = document.querySelectorAll('[data-tab-target]');
         var tabPanels = document.querySelectorAll('[data-tab-panel]');
         if (!tabButtons.length || !tabPanels.length) {
             return;
         }
+
+        var boardControls = document.querySelector('[data-board-controls]');
+        var unitFilterBar = document.querySelector('[data-unit-filter-bar]') || document.querySelector('.unit-filter-bar');
 
         function activateTab(targetName) {
             tabButtons.forEach(function (btn) {
@@ -1947,6 +2262,25 @@
             tabPanels.forEach(function (panel) {
                 panel.hidden = panel.getAttribute('data-tab-panel') !== targetName;
             });
+            if (boardControls) {
+                boardControls.hidden = (targetName !== 'kanban');
+            }
+            if (unitFilterBar) {
+                unitFilterBar.hidden = (targetName === 'uyeler' || targetName === 'aktivite');
+            }
+        }
+
+        var activeBtn = document.querySelector('[data-tab-target].active');
+        if (activeBtn) {
+            var initialTarget = activeBtn.getAttribute('data-tab-target');
+            if (initialTarget) {
+                if (boardControls) {
+                    boardControls.hidden = (initialTarget !== 'kanban');
+                }
+                if (unitFilterBar) {
+                    unitFilterBar.hidden = (initialTarget === 'uyeler' || initialTarget === 'aktivite');
+                }
+            }
         }
 
         tabButtons.forEach(function (btn) {
@@ -2000,13 +2334,18 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        initThemeToggle();
         initTopProgressBar();
         initDashboardCountersAndDonut();
         initSideDrawer();
         initModals();
+        initBoardViewControls();
         initTaskStatusSelects();
         initComments();
         initClientFilters();
+        if (document.querySelector('.kanban-col[data-status]')) {
+            updateKanbanCounts();
+        }
         initFormValidation();
         initPrintReport();
         initCopyButtons();

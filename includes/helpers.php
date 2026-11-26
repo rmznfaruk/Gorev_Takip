@@ -474,6 +474,7 @@ function birim_secenekleri()
         'mekanik' => 'Mekanik',
         'raporlama' => 'Raporlama',
         'aviyonik' => 'Aviyonik',
+        'aerodinamik' => 'Aerodinamik',
     );
 }
 
@@ -492,6 +493,9 @@ function birim_kodu_normalize($birim, $varsayilan = 'genel')
     if (in_array($anahtar, array('tasarim', 'tasarım', "tasari\xCC\x87m", "avi\xCC\x87yoni\xCC\x87k", "avi\xCC\x87yonik", "aviyoni\xCC\x87k"), true)) {
         return 'aviyonik';
     }
+    if (in_array($anahtar, array('aerodinamik', 'aerodınamık', 'aerodınamik', 'aerodinamık', "aerodi\xCC\x87nami\xCC\x87k", "aerodi\xCC\x87namik", "aerodinami\xCC\x87k", 'aerodİnamİk', 'aerodİnamik', 'aerodinamİk'), true)) {
+        return 'aerodinamik';
+    }
     $secenekler = birim_secenekleri();
     return isset($secenekler[$anahtar]) ? $anahtar : $varsayilan;
 }
@@ -505,6 +509,9 @@ function birim_filtre_degerleri($birim_kodu)
     if ($kod === 'aviyonik') {
         return array('aviyonik', 'tasarim', 'Tasarim', 'tasarım', 'Tasarım', 'TASARIM', 'TASARİM', "tasari\xCC\x87m", "TASARI\xCC\x87M");
     }
+    if ($kod === 'aerodinamik') {
+        return array('aerodinamik', 'Aerodinamik', 'AERODİNAMİK', 'AERODINAMIK', 'aerodınamık', "aerodi\xCC\x87nami\xCC\x87k", "AERODI\xCC\x87NAMI\xCC\x87K");
+    }
     return array($kod);
 }
 
@@ -513,6 +520,9 @@ function birim_ikonu($birim)
     $anahtar = birim_kodu_normalize($birim, 'genel');
     if ($anahtar === 'aviyonik') {
         return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>';
+    }
+    if ($anahtar === 'aerodinamik') {
+        return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path><path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path><path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path></svg>';
     }
     if ($anahtar === 'yazilim') {
         return '<svg class="unit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline><line x1="14" y1="4" x2="10" y2="20"></line></svg>';
@@ -570,12 +580,7 @@ function birim_gecerli_mi($birim)
     if (!is_string($birim)) {
         return false;
     }
-    $secenekler = birim_secenekleri();
-    $temiz = trim($birim);
-    $anahtar = function_exists('mb_strtolower')
-        ? mb_strtolower($temiz, 'UTF-8')
-        : strtolower($temiz);
-    return isset($secenekler[$anahtar]);
+    return birim_kodu_normalize($birim, '') !== '';
 }
 
 function oda_kodu_uret(PDO $pdo, $on_ek = 'ODA')

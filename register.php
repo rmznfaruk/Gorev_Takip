@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($hatalar)) {
         $sifre_hash = password_hash($sifre, PASSWORD_DEFAULT);
-        $varsayilan_unvan = ($unvan !== '') ? $unvan : 'Yazılım Geliştirici';
+        $varsayilan_unvan = ($unvan !== '') ? $unvan : 'Ekip Üyesi';
 
         $simdi = istanbul_simdi();
         $ekle = $pdo->prepare(
@@ -174,7 +174,8 @@ require __DIR__ . '/includes/header.php';
                         name="unvan"
                         class="form-control"
                         value="<?php echo e($unvan); ?>"
-                        placeholder="Örn: Backend Geliştirici"
+                        placeholder="Örn: Yazılım Ekibi Üyesi, Aerodinamik Ekibi Üyesi"
+                        autocomplete="organization-title"
                     >
                 </div>
 
@@ -188,6 +189,8 @@ require __DIR__ . '/includes/header.php';
                         value="<?php echo e($oda_kodu); ?>"
                         placeholder="Örn: ODA-7K4M9P"
                         autocomplete="off"
+                        autocorrect="off"
+                        spellcheck="false"
                     >
                     <span class="form-hint">Bir grubun davet kodunuz varsa girin, kayıt sonrası doğrudan odaya katılırsınız.</span>
                 </div>

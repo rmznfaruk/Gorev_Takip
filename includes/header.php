@@ -74,9 +74,15 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo e($csrf_meta); ?>">
     <title><?php echo e($sayfa_basligi); ?> — GörevTakip</title>
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+    (function(){try{if(localStorage.getItem('gt_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();
+    </script>
     <link rel="stylesheet" href="assets/css/style.css?v=<?php echo e((string) $css_ver); ?>">
 </head>
 <body>
@@ -135,6 +141,30 @@ $app_js_src = 'assets/js/app.js?v=' . $js_ver;
         <?php endif; ?>
 
         <div class="topbar-right">
+            <button
+                type="button"
+                class="theme-toggle"
+                data-theme-toggle
+                aria-pressed="false"
+                aria-label="Koyu moda geç"
+                title="Koyu moda geç"
+            >
+                <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <svg class="theme-icon theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+
             <?php if ($oturum_acik && $ust_kullanici): ?>
                 <div class="notif-wrap">
                     <button

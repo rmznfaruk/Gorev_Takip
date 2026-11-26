@@ -73,28 +73,127 @@ foreach ($erisim_gorevleri as $eg) {
 $genel_toplam_gorev = count($erisim_gorevleri);
 $genel_ilerleme_yuzde = gorev_listesi_ortalama_ilerleme($erisim_gorevleri);
 
-// Yaklasan ve geciken teslim tarihleri (oda izolasyonlu, tamamlanmamis ve son tarihi olan gorevler)
+// Yaklasan ve geciken teslim tarihleri (yalnizca kullanicinin kendi ana gorevleri + kendi haftalik alt gorevleri)
 $stmt = $pdo->prepare('
     SELECT g.id, g.baslik, g.durum, g.oncelik, g.birim, g.son_tarih,
-           p.id AS proje_id, p.ad AS proje_adi, p.kod AS proje_kodu,
-           u.ad_soyad AS atanan_adi
+           p.id AS proje_id, p.ad AS proje_adi, p.kod AS proje_kodu
     FROM gorevler g
     INNER JOIN projeler p ON p.id = g.proje_id
-    LEFT JOIN kullanicilar u ON u.id = g.atanan_id
     WHERE g.durum <> ?
+      AND g.atanan_id = ?
       AND g.son_tarih IS NOT NULL
+      AND g.son_tarih <> \'\'
       AND (
           p.yonetici_id = ?
           OR EXISTS (SELECT 1 FROM proje_uyeleri pu WHERE pu.proje_id = p.id AND pu.kullanici_id = ?)
       )
     ORDER BY g.son_tarih ASC, CASE g.oncelik WHEN \'yuksek\' THEN 1 WHEN \'orta\' THEN 2 ELSE 3 END
-    LIMIT 6
 ');
-$stmt->execute(array('tamamlandi', $kullanici_id, $kullanici_id));
-$yaklasan_gorevler = $stmt->fetchAll();
-foreach ($yaklasan_gorevler as $idx => $yg) {
-    $yaklasan_gorevler[$idx]['teslim_durumu'] = teslim_durumu_hesapla($yg['son_tarih'], $yg['durum']);
+$stmt->execute(array('tamamlandi', $kullanici_id, $kullanici_id, $kullanici_id));
+$kisisel_ana_gorevler = $stmt->fetchAll();
+
+$stmt = $pdo->prepare('
+    SELECT ag.id AS alt_id, ag.gorev_id, ag.hafta_etiketi, ag.baslik, ag.son_tarih, ag.sira,
+           g.baslik AS ust_gorev_baslik, g.son_tarih AS ust_son_tarih, g.oncelik,
+           p.id AS proje_id, p.ad AS proje_adi, p.kod AS proje_kodu
+    FROM alt_gorevler ag
+    INNER JOIN gorevler g ON g.id = ag.gorev_id
+    INNER JOIN projeler p ON p.id = g.proje_id
+    WHERE ag.tamamlandi = 0
+      AND g.durum <> ?
+      AND (ag.atanan_id = ? OR (ag.atanan_id IS NULL AND g.atanan_id = ?))
+      AND (
+          p.yonetici_id = ?
+          OR EXISTS (SELECT 1 FROM proje_uyeleri pu WHERE pu.proje_id = p.id AND pu.kullanici_id = ?)
+      )
+    ORDER BY ag.sira ASC, ag.id ASC
+');
+$stmt->execute(array('tamamlandi', $kullanici_id, $kullanici_id, $kullanici_id, $kullanici_id));
+$kisisel_alt_gorevler = $stmt->fetchAll();
+
+$yaklasan_gorevler = array();
+
+foreach ($kisisel_alt_gorevler as $ag) {
+    $ham_alt_tarih = isset($ag['son_tarih']) ? trim((string) $ag['son_tarih']) : '';
+    if (strpos($ham_alt_tarih, '0000-00-00') === 0) {
+        $ham_alt_tarih = '';
+    }
+    $ham_ust_tarih = isset($ag['ust_son_tarih']) ? trim((string) $ag['ust_son_tarih']) : '';
+    if (strpos($ham_ust_tarih, '0000-00-00') === 0) {
+        $ham_ust_tarih = '';
+    }
+    $kendi_tarihi_var = ($ham_alt_tarih !== '');
+    $etkin_tarih = $kendi_tarihi_var ? $ham_alt_tarih : $ham_ust_tarih;
+    $hafta_etiketi = trim((string) $ag['hafta_etiketi']) !== '' ? trim((string) $ag['hafta_etiketi']) : 'Haftalık';
+
+    $yaklasan_gorevler[] = array(
+        'tur' => 'haftalik',
+        'hedef_link' => 'gorev_detay.php?id=' . (int) $ag['gorev_id'] . '#haftalik-plan',
+        'baslik' => $ag['baslik'],
+        'etiket' => $hafta_etiketi,
+        'kisa_etiket' => kisa_hafta_etiketi($hafta_etiketi),
+        'alt_bilgi' => $ag['proje_adi'] . ' · ' . metin_kisalt($ag['ust_gorev_baslik'], 40),
+        'son_tarih' => $etkin_tarih,
+        'kendi_tarihi_var' => $kendi_tarihi_var,
+        'durum' => 'yapilacak',
+        'sira' => (int) $ag['sira'],
+        'id_sort' => (int) $ag['alt_id'],
+        'teslim_durumu' => $kendi_tarihi_var ? teslim_durumu_hesapla($etkin_tarih, 'yapilacak') : array('durum' => 'normal', 'kisa' => 'Haftalık'),
+    );
 }
+
+foreach ($kisisel_ana_gorevler as $yg) {
+    $ana_tarih = trim((string) $yg['son_tarih']);
+    if ($ana_tarih === '' || strpos($ana_tarih, '0000-00-00') === 0) {
+        continue;
+    }
+    $yaklasan_gorevler[] = array(
+        'tur' => 'ana_gorev',
+        'hedef_link' => 'gorev_detay.php?id=' . (int) $yg['id'],
+        'baslik' => $yg['baslik'],
+        'etiket' => 'Ana Görev',
+        'kisa_etiket' => '',
+        'alt_bilgi' => $yg['proje_adi'],
+        'son_tarih' => $ana_tarih,
+        'kendi_tarihi_var' => true,
+        'durum' => $yg['durum'],
+        'sira' => 9999,
+        'id_sort' => (int) $yg['id'],
+        'teslim_durumu' => teslim_durumu_hesapla($ana_tarih, $yg['durum']),
+    );
+}
+
+usort($yaklasan_gorevler, function ($a, $b) {
+    $a_tarih = isset($a['son_tarih']) ? substr(trim((string) $a['son_tarih']), 0, 10) : '';
+    $b_tarih = isset($b['son_tarih']) ? substr(trim((string) $b['son_tarih']), 0, 10) : '';
+    $a_bos = ($a_tarih === '') ? 1 : 0;
+    $b_bos = ($b_tarih === '') ? 1 : 0;
+    if ($a_bos !== $b_bos) {
+        return $a_bos - $b_bos;
+    }
+    if ($a_tarih !== $b_tarih) {
+        $cmp = strcmp($a_tarih, $b_tarih);
+        return $cmp < 0 ? -1 : 1;
+    }
+    $a_tur_sira = ($a['tur'] === 'haftalik') ? 0 : 1;
+    $b_tur_sira = ($b['tur'] === 'haftalik') ? 0 : 1;
+    if ($a_tur_sira !== $b_tur_sira) {
+        return $a_tur_sira - $b_tur_sira;
+    }
+    $a_sira = (int) $a['sira'];
+    $b_sira = (int) $b['sira'];
+    if ($a_sira !== $b_sira) {
+        return ($a_sira < $b_sira) ? -1 : 1;
+    }
+    $a_id = (int) $a['id_sort'];
+    $b_id = (int) $b['id_sort'];
+    if ($a_id !== $b_id) {
+        return ($a_id < $b_id) ? -1 : 1;
+    }
+    return 0;
+});
+
+$yaklasan_gorevler = array_slice($yaklasan_gorevler, 0, 8);
 
 // Kullanicinin aktif gorevleri (oda izolasyonlu, alt gorev ilerlemesiyle)
 $stmt = $pdo->prepare('
@@ -290,10 +389,10 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             <?php else: ?>
                 <div class="table-wrap">
-                    <table class="data-table">
+                    <table class="data-table dashboard-task-table">
                         <thead>
                             <tr>
-                                <th>Görev</th>
+                                <th class="col-task-main">Görev</th>
                                 <th>Birim</th>
                                 <th>İlerleme</th>
                                 <th>Son Tarih</th>
@@ -308,11 +407,20 @@ require_once __DIR__ . '/includes/header.php';
                                 $g_ilerleme = (int) $gorev['ilerleme'];
                                 ?>
                                 <tr>
-                                    <td data-label="Görev">
-                                        <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link">
-                                            <span class="task-id-muted"><?php echo e($gorev['proje_kodu']); ?></span>
-                                            <span><?php echo e($gorev['baslik']); ?></span>
-                                        </a>
+                                    <td data-label="Görev" class="col-task-main">
+                                        <div class="task-cell-stack">
+                                            <div class="task-cell-meta">
+                                                <span class="code-chip"><?php echo e($gorev['proje_kodu']); ?></span>
+                                                <?php if ((int) $gorev['alt_toplam'] > 0): ?>
+                                                    <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>#haftalik-plan" class="task-cell-plan-link">
+                                                        Plan (<?php echo (int) $gorev['alt_tamamlanan']; ?>/<?php echo (int) $gorev['alt_toplam']; ?>) &rarr;
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                            <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link task-title-block">
+                                                <?php echo e($gorev['baslik']); ?>
+                                            </a>
+                                        </div>
                                     </td>
                                     <td data-label="Birim">
                                         <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
@@ -397,18 +505,20 @@ require_once __DIR__ . '/includes/header.php';
             <?php if (empty($yaklasan_gorevler)): ?>
                 <div class="empty-state" style="padding:1.5rem 1rem;">
                     <?php echo bos_durum_gorseli('takvim'); ?>
-                    <p>Yaklaşan veya geciken teslim tarihi bulunmuyor.</p>
+                    <p>Üzerinize kayıtlı yaklaşan ana veya haftalık görev bulunmuyor.</p>
                 </div>
             <?php else: ?>
                 <div class="deadline-list">
                     <?php foreach ($yaklasan_gorevler as $yg): ?>
                         <?php
-                        $ts = strtotime((string) $yg['son_tarih']);
+                        $haftalik_mi = ($yg['tur'] === 'haftalik');
+                        $kendi_tarihi_var = !empty($yg['kendi_tarihi_var']);
+                        $tarih_degeri = isset($yg['son_tarih']) ? trim((string) $yg['son_tarih']) : '';
+                        $ts = ($kendi_tarihi_var && $tarih_degeri !== '') ? strtotime($tarih_degeri) : false;
                         $gun_no = $ts ? date('d', $ts) : '--';
                         $ay_no = $ts ? (int) date('n', $ts) : 0;
                         $ay_kisa = isset($kisa_aylar[$ay_no]) ? $kisa_aylar[$ay_no] : '';
                         $td = isset($yg['teslim_durumu']) ? $yg['teslim_durumu'] : array('durum' => 'normal', 'kisa' => '');
-                        $aciliyet = gorev_aciliyet_bilgisi($yg['son_tarih'], $yg['durum'] === 'tamamlandi');
                         $rozet_sinif = 'deadline-ok';
                         if ($td['durum'] === 'gecikti') {
                             $rozet_sinif = 'deadline-overdue';
@@ -416,24 +526,40 @@ require_once __DIR__ . '/includes/header.php';
                             $rozet_sinif = 'deadline-soon';
                         }
                         ?>
-                        <a href="gorev_detay.php?id=<?php echo (int) $yg['id']; ?>" class="deadline-item">
-                            <div class="deadline-date-box">
-                                <span class="deadline-day"><?php echo e($gun_no); ?></span>
-                                <span class="deadline-month"><?php echo e($ay_kisa); ?></span>
+                        <a href="<?php echo e($yg['hedef_link']); ?>" class="deadline-item<?php echo $haftalik_mi ? ' is-weekly-item' : ''; ?>">
+                            <div class="deadline-date-box<?php echo $haftalik_mi ? ' is-weekly' : ''; ?>">
+                                <?php if ($kendi_tarihi_var && $ts): ?>
+                                    <span class="deadline-day"><?php echo e($gun_no); ?></span>
+                                    <span class="deadline-month"><?php echo e($ay_kisa); ?></span>
+                                <?php else: ?>
+                                    <span class="deadline-day"><?php echo e($yg['kisa_etiket'] !== '' ? $yg['kisa_etiket'] : 'H1'); ?></span>
+                                    <span class="deadline-month">PLAN</span>
+                                <?php endif; ?>
                             </div>
                             <div class="deadline-info">
-                                <div class="deadline-title"><?php echo e($yg['baslik']); ?></div>
-                                <div class="deadline-room"><?php echo e($yg['proje_adi']); ?></div>
+                                <div class="deadline-title-row">
+                                    <span class="deadline-kind-badge <?php echo $haftalik_mi ? 'is-weekly' : 'is-main'; ?>"><?php echo e($yg['etiket']); ?></span>
+                                    <span class="deadline-title" title="<?php echo e($yg['baslik']); ?>"><?php echo e($yg['baslik']); ?></span>
+                                </div>
+                                <div class="deadline-room" title="<?php echo e($yg['alt_bilgi']); ?>"><?php echo e($yg['alt_bilgi']); ?></div>
                             </div>
-                            <span class="deadline-badge <?php echo e($rozet_sinif . ' ' . $aciliyet['sinif']); ?>" title="<?php echo e($aciliyet['etiket']); ?>" style="display:inline-flex;align-items:center;gap:0.28rem;flex-shrink:0;">
-                                <?php if (!empty($aciliyet['pulse'])): ?>
-                                    <span class="urgency-pulse-dot" aria-hidden="true"></span>
-                                <?php endif; ?>
-                                <?php echo stickman_durum_ikonu($aciliyet['mod']); ?>
-                                <?php if (!empty($td['kisa'])): ?>
-                                    <span><?php echo e($td['kisa']); ?></span>
-                                <?php endif; ?>
-                            </span>
+                            <?php if ($kendi_tarihi_var && $tarih_degeri !== ''): ?>
+                                <?php $aciliyet = gorev_aciliyet_bilgisi($tarih_degeri, false); ?>
+                                <span class="deadline-badge <?php echo e($rozet_sinif . ' ' . $aciliyet['sinif']); ?>" title="<?php echo e($aciliyet['etiket']); ?>" style="display:inline-flex;align-items:center;gap:0.28rem;flex-shrink:0;">
+                                    <?php if (!empty($aciliyet['pulse'])): ?>
+                                        <span class="urgency-pulse-dot" aria-hidden="true"></span>
+                                    <?php endif; ?>
+                                    <?php echo stickman_durum_ikonu($aciliyet['mod']); ?>
+                                    <?php if (!empty($td['kisa'])): ?>
+                                        <span><?php echo e($td['kisa']); ?></span>
+                                    <?php endif; ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="deadline-badge deadline-ok urgency-active" title="Haftalık plan adımı" style="display:inline-flex;align-items:center;gap:0.28rem;flex-shrink:0;">
+                                    <?php echo stickman_durum_ikonu('walk'); ?>
+                                    <span>Haftalık</span>
+                                </span>
+                            <?php endif; ?>
                         </a>
                     <?php endforeach; ?>
                 </div>

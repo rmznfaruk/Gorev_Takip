@@ -74,6 +74,7 @@ CREATE TABLE gorevler (
   olusturan_id INT UNSIGNED NOT NULL,
   durum ENUM('yapilacak', 'devam_ediyor', 'tamamlandi') NOT NULL DEFAULT 'yapilacak',
   oncelik ENUM('dusuk', 'orta', 'yuksek') NOT NULL DEFAULT 'orta',
+  -- Desteklenen birimler: genel, yazilim, elektronik, mekanik, raporlama, aviyonik, aerodinamik
   birim VARCHAR(40) NOT NULL DEFAULT 'genel',
   son_tarih DATE NULL,
   olusturma_tarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -200,4 +201,5 @@ SET time_zone = '+03:00';
 
 INSERT IGNORE INTO sistem_migrasyonlari (ad, uygulandi_tarihi) VALUES
   ('tz_istanbul_v1', NOW()),
-  ('birim_aviyonik_v1', NOW());
+  ('birim_aviyonik_v1', NOW()),
+  ('birim_aerodinamik_v1', NOW());

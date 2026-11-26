@@ -438,7 +438,20 @@ require_once __DIR__ . '/includes/header.php';
     </button>
 </div>
 
-<div class="unit-filter-bar no-print"<?php echo $filtre_birim !== '' ? ' data-server-filtered="1"' : ''; ?> role="group" aria-label="Birim filtresi">
+<?php
+$sutun_sayilari = array_map(function ($s) { return count($s['gorevler']); }, $sutunlar);
+$max_sutun_gorev = !empty($sutun_sayilari) ? max($sutun_sayilari) : 0;
+$dolu_sutun_sayisi = 0;
+foreach ($sutun_sayilari as $adet) {
+    if ($adet > 0) {
+        $dolu_sutun_sayisi++;
+    }
+}
+$varsayilan_duzen = ($proje_toplam_gorev >= 6 && ($dolu_sutun_sayisi <= 1 || $max_sutun_gorev >= 6)) ? 'grid' : 'columns';
+$varsayilan_yogunluk = ($proje_toplam_gorev >= 6 || $max_sutun_gorev >= 5) ? 'compact' : 'detailed';
+?>
+
+<div class="unit-filter-bar no-print" data-unit-filter-bar<?php echo $filtre_birim !== '' ? ' data-server-filtered="1"' : ''; ?> role="group" aria-label="Birim filtresi">
     <div class="unit-filter-list">
         <a href="proje_detay.php?id=<?php echo $proje_id; ?>"
            class="unit-filter-btn<?php echo $filtre_birim === '' ? ' is-active' : ''; ?>"
@@ -451,13 +464,68 @@ require_once __DIR__ . '/includes/header.php';
                aria-pressed="<?php echo $filtre_birim === $birim_kod ? 'true' : 'false'; ?>"><?php echo e($birim_ad); ?></a>
         <?php endforeach; ?>
     </div>
+    <div class="board-view-controls" data-board-controls>
+        <div class="view-segment" role="group" aria-label="Pano düzeni">
+            <button type="button"
+                    class="view-segment-btn<?php echo $varsayilan_duzen === 'grid' ? ' is-active' : ''; ?>"
+                    data-board-layout-btn="grid"
+                    aria-pressed="<?php echo $varsayilan_duzen === 'grid' ? 'true' : 'false'; ?>"
+                    title="Ekran genişliğini tam kullanan 3'lü kart ızgarası">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                </svg>
+                <span>Izgara</span>
+            </button>
+            <button type="button"
+                    class="view-segment-btn<?php echo $varsayilan_duzen === 'columns' ? ' is-active' : ''; ?>"
+                    data-board-layout-btn="columns"
+                    aria-pressed="<?php echo $varsayilan_duzen === 'columns' ? 'true' : 'false'; ?>"
+                    title="3 durum sütunlu Kanban panosu">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                </svg>
+                <span>Sütun</span>
+            </button>
+        </div>
+        <div class="view-segment" role="group" aria-label="Kart görünüm yoğunluğu">
+            <button type="button"
+                    class="view-segment-btn<?php echo $varsayilan_yogunluk === 'compact' ? ' is-active' : ''; ?>"
+                    data-board-density-btn="compact"
+                    aria-pressed="<?php echo $varsayilan_yogunluk === 'compact' ? 'true' : 'false'; ?>"
+                    title="Kompakt kart görünümü">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                </svg>
+                <span>Kompakt</span>
+            </button>
+            <button type="button"
+                    class="view-segment-btn<?php echo $varsayilan_yogunluk === 'detailed' ? ' is-active' : ''; ?>"
+                    data-board-density-btn="detailed"
+                    aria-pressed="<?php echo $varsayilan_yogunluk === 'detailed' ? 'true' : 'false'; ?>"
+                    title="Detaylı kart görünümü">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <line x1="7" y1="9" x2="17" y2="9"></line>
+                    <line x1="7" y1="13" x2="13" y2="13"></line>
+                </svg>
+                <span>Detaylı</span>
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- SEKME 1: KANBAN -->
 <section class="tab-panel" data-tab-panel="kanban" aria-label="Kanban Panosu">
-    <div class="kanban-grid">
+    <div class="kanban-grid" data-kanban-board data-project-id="<?php echo (int) $proje_id; ?>" data-layout="<?php echo e($varsayilan_duzen); ?>" data-density="<?php echo e($varsayilan_yogunluk); ?>" data-default-layout="<?php echo e($varsayilan_duzen); ?>" data-default-density="<?php echo e($varsayilan_yogunluk); ?>">
         <?php foreach ($sutunlar as $durum_kodu => $sutun): ?>
-            <div class="kanban-col" data-status="<?php echo e($durum_kodu); ?>">
+            <div class="kanban-col<?php echo empty($sutun['gorevler']) ? ' is-empty' : ''; ?>" data-status="<?php echo e($durum_kodu); ?>">
                 <div class="kanban-col-header">
                     <span class="kanban-col-title">
                         <span class="col-dot <?php echo e($sutun['nokta']); ?>" aria-hidden="true"></span>
@@ -477,17 +545,22 @@ require_once __DIR__ . '/includes/header.php';
                         $g_alt_biten = (int) $gorev['alt_tamamlanan'];
                         $g_ilerleme = (int) $gorev['ilerleme'];
                         ?>
-                        <article class="task-card" data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>">
+                        <article class="task-card" data-filter-item data-task-card="<?php echo (int) $gorev['id']; ?>" data-unit="<?php echo e($gorev_birim_kodu); ?>" data-status="<?php echo e($gorev['durum']); ?>" data-priority="<?php echo e($gorev['oncelik']); ?>">
                             <div class="task-card-top">
-                                <span class="code-chip"><?php echo e($proje['kod']); ?> #<?php echo (int) $gorev['id']; ?></span>
-                                <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
-                                <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
-                                    <span class="priority-dot" aria-hidden="true"></span>
-                                    <span><?php echo e($oncelik['metin']); ?></span>
-                                </span>
+                                <div class="task-card-badges">
+                                    <span class="code-chip"><?php echo e($proje['kod']); ?> #<?php echo (int) $gorev['id']; ?></span>
+                                    <span class="unit-tag <?php echo e($birim_bilgi['sinif']); ?>"><?php echo birim_ikonu(isset($gorev['birim']) ? $gorev['birim'] : 'genel'); ?><span><?php echo e($birim_bilgi['metin']); ?></span></span>
+                                </div>
+                                <div class="task-card-indicators">
+                                    <span class="priority-indicator priority-<?php echo e($gorev['oncelik']); ?>">
+                                        <span class="priority-dot" aria-hidden="true"></span>
+                                        <span><?php echo e($oncelik['metin']); ?></span>
+                                    </span>
+                                    <span class="compact-pct-chip<?php echo $g_ilerleme >= 100 ? ' is-complete' : ''; ?>" data-card-pct="<?php echo (int) $gorev['id']; ?>">%<?php echo $g_ilerleme; ?></span>
+                                </div>
                             </div>
                             <h3 class="task-card-title">
-                                <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>">
+                                <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" title="<?php echo e($gorev['baslik']); ?>">
                                     <?php echo e($gorev['baslik']); ?>
                                 </a>
                             </h3>
@@ -524,18 +597,25 @@ require_once __DIR__ . '/includes/header.php';
                                     </select>
                                 <?php else: ?>
                                     <?php $gd_kart = durum_etiketi($gorev['durum']); ?>
-                                    <span class="status-pill <?php echo e($durum_sinifi); ?>">
+                                    <span class="status-pill <?php echo e($durum_sinifi); ?>" data-task-badge="<?php echo (int) $gorev['id']; ?>">
                                         <span class="status-dot" aria-hidden="true"></span>
                                         <span class="status-pill-text"><?php echo e($gd_kart['metin']); ?></span>
                                     </span>
                                 <?php endif; ?>
-                                <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>#haftalik-plan" class="btn btn-ghost btn-sm">Haftalık Plan (<?php echo $g_alt_biten; ?>/<?php echo $g_alt_toplam; ?>) &rarr;</a>
+                                <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>#haftalik-plan" class="btn btn-ghost btn-sm task-plan-link"><span class="plan-label-full">Haftalık Plan</span><span class="plan-label-short">Plan</span> (<?php echo $g_alt_biten; ?>/<?php echo $g_alt_toplam; ?>) &rarr;</a>
                             </div>
                         </article>
                     <?php endforeach; ?>
                 </div>
+                <div class="kanban-col-empty" data-kanban-col-empty<?php echo !empty($sutun['gorevler']) ? ' hidden' : ''; ?>>
+                    <span class="col-dot <?php echo e($sutun['nokta']); ?>" aria-hidden="true"></span>
+                    <span>Bu aşamada görev yok</span>
+                </div>
             </div>
         <?php endforeach; ?>
+        <div class="kanban-board-empty" data-kanban-board-empty<?php echo $proje_toplam_gorev > 0 ? ' hidden' : ''; ?>>
+            <?php echo $proje_toplam_gorev === 0 ? 'Bu odada henüz görev bulunmuyor.' : 'Seçilen filtreye uygun görev bulunamadı.'; ?>
+        </div>
     </div>
 </section>
 
@@ -572,7 +652,7 @@ require_once __DIR__ . '/includes/header.php';
                             $durum_degistirebilir = gorev_durum_degistirebilir_mi($proje, $gorev, $kullanici);
                             $g_ilerleme = (int) $gorev['ilerleme'];
                             ?>
-                            <tr data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>">
+                            <tr data-filter-item data-unit="<?php echo e($gorev_birim_kodu); ?>" data-status="<?php echo e($gorev['durum']); ?>" data-priority="<?php echo e($gorev['oncelik']); ?>">
                                 <td data-label="Görev">
                                     <a href="gorev_detay.php?id=<?php echo (int) $gorev['id']; ?>" class="task-title-link">
                                         <span class="task-id-muted">#<?php echo (int) $gorev['id']; ?></span>
@@ -623,7 +703,7 @@ require_once __DIR__ . '/includes/header.php';
                                         </select>
                                     <?php else: ?>
                                         <?php $gd = durum_etiketi($gorev['durum']); ?>
-                                        <span class="status-pill <?php echo e($durum_sinifi); ?>">
+                                        <span class="status-pill <?php echo e($durum_sinifi); ?>" data-task-badge="<?php echo (int) $gorev['id']; ?>">
                                             <span class="status-dot" aria-hidden="true"></span>
                                             <span class="status-pill-text"><?php echo e($gd['metin']); ?></span>
                                         </span>
